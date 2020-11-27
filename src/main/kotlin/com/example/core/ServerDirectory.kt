@@ -4,8 +4,12 @@ import com.example.core.common.*
 import com.example.core.model.*
 import com.example.core.model.props.ServerProperties
 import com.example.core.versions.DownloadException
+import com.example.core.versions.DownloadManager
 import com.example.core.versions.DownloadManifest
 import com.example.core.versions.ManifestCreator
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.BufferedWriter
@@ -17,6 +21,7 @@ import java.nio.file.Path
 class ServerDirectory(val root: Directory) {
     companion object {
         private val creator = ManifestCreator()
+        private val manager = DownloadManager()
 
         private fun scanForWorlds(dir: Directory): List<World> {
             val worldDirectories = dir.listFiles { file: File ->
@@ -38,7 +43,6 @@ class ServerDirectory(val root: Directory) {
 
         private fun scanForVersions(dir: Directory): MutableList<Path> {
             return dir.listFiles { file: File -> file.extension == "jar" }!!
-                .asSequence()
                 .map { it.toPath() }
                 .associateBy { it.sha1() }
                 .mapValues { (k, v) ->
@@ -77,5 +81,14 @@ class ServerDirectory(val root: Directory) {
         BufferedWriter(FileWriter(properties, false)).apply {
             write(config.encodeToString(ServerProperties.serializer(), props))
         }.close()
+    }
+
+    fun addVersion(id: String): Job {
+        val manifest = creator.createManifest(id)
+        val target = root.toPath().resolve("minecraft_server.$id.jar")
+        return GlobalScope.launch {
+            manager.download(manifest, target)
+            serverVersions.add(target)
+        }
     }
 }

@@ -83,7 +83,7 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
         releaseTime: OffsetDateTime
     ): DownloadManifest? {
         val ctx = JsonPath.parse(document)
-        return nullIfError(JsonPathException::class) {
+        return nullIfError<JsonPathException, DownloadManifest?> {
             val manifest = DownloadManifest(
                 id,
                 URL(ctx.read(dlUrlPath)),

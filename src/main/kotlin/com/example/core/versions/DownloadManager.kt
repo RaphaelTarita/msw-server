@@ -19,8 +19,6 @@ import java.security.MessageDigest
 import kotlin.math.min
 
 class DownloadManager(
-    var manifest: DownloadManifest,
-    var target: Path,
     private val bufferSize: Int = 4096
 ) {
     companion object {
@@ -30,48 +28,47 @@ class DownloadManager(
     }
 
     private val client = HttpClient(Apache)
-    private val md = MessageDigest.getInstance("SHA-1")
 
-    private fun checkSize(currentManifest: DownloadManifest) {
+    private fun checkSize(manifest: DownloadManifest) {
         val actualSize = runBlocking {
-            client.head<HttpResponse>(currentManifest.downloadUrl).contentLength()
+            client.head<HttpResponse>(manifest.downloadUrl).contentLength()
         }
 
-        if (actualSize != currentManifest.size) {
+        if (actualSize != manifest.size) {
             throw DownloadException(
-                currentManifest.downloadUrl,
-                "Expected ${currentManifest.size} bytes, but HEAD returned $actualSize"
+                manifest.downloadUrl,
+                "Expected ${manifest.size} bytes, but HEAD returned $actualSize"
             )
         }
     }
 
-    private fun checkEndSize(currentManifest: DownloadManifest, currentTarget: Path) {
-        val actualSize = Files.size(currentTarget)
-        if (actualSize != currentManifest.size) {
+    private fun checkEndSize(manifest: DownloadManifest, target: Path) {
+        val actualSize = Files.size(target)
+        if (actualSize != manifest.size) {
             throw DownloadException(
-                currentManifest.downloadUrl,
+                manifest.downloadUrl,
                 "Expected ${manifest.size} bytes, but downloaded file has $actualSize bytes"
             )
         }
     }
 
-    private fun checkHash(currentManifest: DownloadManifest, path: Path) {
+    private fun checkHash(md: MessageDigest, manifest: DownloadManifest, path: Path) {
         val sha1 = md.digest().toHexString()
-        if (sha1 != currentManifest.sha1) {
+        if (sha1 != manifest.sha1) {
             Files.delete(path)
             throw DownloadException(
-                currentManifest.downloadUrl,
-                "Expected SHA-1 '${currentManifest.sha1}', but got '$sha1'"
+                manifest.downloadUrl,
+                "Expected SHA-1 '${manifest.sha1}', but got '$sha1'"
             )
         }
     }
 
-    private suspend fun initDownload(currentManifest: DownloadManifest): ByteReadChannel {
-        return client.get(currentManifest.downloadUrl)
+    private suspend fun initDownload(manifest: DownloadManifest): ByteReadChannel {
+        return client.get(manifest.downloadUrl)
     }
 
-    private suspend fun resumeDownload(currentManifest: DownloadManifest, progress: Long): ByteReadChannel {
-        val channel = initDownload(currentManifest)
+    private suspend fun resumeDownload(manifest: DownloadManifest, progress: Long, md: MessageDigest): ByteReadChannel {
+        val channel = initDownload(manifest)
         val hashBuf = ByteArray(bufferSize)
         var remaining = progress
         do {
@@ -84,15 +81,14 @@ class DownloadManager(
         return channel
     }
 
-    fun download() {
-        val currentManifest = manifest
-        val currentTarget = target
-        checkSize(currentManifest)
-        val writer = Files.newOutputStream(currentTarget, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-        val progress = progress(currentTarget)
-        if (progress >= currentManifest.size) return
+    fun download(manifest: DownloadManifest, target: Path) {
+        checkSize(manifest)
+        val writer = Files.newOutputStream(target, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+        val progress = progress(target)
+        if (progress >= manifest.size) return
+        val md = MessageDigest.getInstance("SHA-1")
         val channel = runBlocking {
-            if (progress > 0L) resumeDownload(currentManifest, progress) else initDownload(currentManifest)
+            if (progress > 0L) resumeDownload(manifest, progress, md) else initDownload(manifest)
         }
 
         var hashJob: Job? = null
@@ -107,7 +103,7 @@ class DownloadManager(
             }
         } while (available >= 0)
         writer.close()
-        checkHash(currentManifest, currentTarget)
-        checkEndSize(currentManifest, currentTarget)
+        checkHash(md, manifest, target)
+        checkEndSize(manifest, target)
     }
 }

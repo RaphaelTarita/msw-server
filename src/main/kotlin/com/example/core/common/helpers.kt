@@ -1,12 +1,27 @@
 package com.example.core.common
 
+import com.example.core.versions.DownloadManifest
+import com.example.core.versions.model.VersionType
 import java.io.File
+import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.security.MessageDigest
+import java.time.OffsetDateTime
 import kotlin.math.min
 
 val HEX = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
+
+val EMPTY_MANIFEST = DownloadManifest(
+    "",
+    URL("http://localhost:8080"),
+    VersionType.ALL,
+    OffsetDateTime.now(),
+    OffsetDateTime.now(),
+    0,
+    ""
+)
 
 fun Long.coerceToInt(): Int {
     return min(this, Int.MAX_VALUE.toLong()).toInt()
@@ -25,7 +40,7 @@ fun readFromPath(path: Path): String {
 }
 
 fun readFromPath(path: String): String {
-    return readFromPath(Path.of(path))
+    return readFromPath(Paths.get(path))
 }
 
 fun Path.renameTo(new: String): Path {
@@ -59,7 +74,7 @@ inline fun <reified E> ignoreError(block: () -> Unit) {
     }
 }
 
-inline fun <reified E, R> nullIfError(block: () -> R): R? {
+inline fun <reified E : Throwable, R> nullIfError(block: () -> R): R? {
     return try {
         block()
     } catch (exc: Throwable) {

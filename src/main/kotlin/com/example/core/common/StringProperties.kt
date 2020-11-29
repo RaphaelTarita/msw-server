@@ -5,6 +5,9 @@ import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.properties.Properties
 
+private val nonBlankSeparators = setOf('=', ':')
+private val separators = nonBlankSeparators + ' '
+
 @ExperimentalSerializationApi
 open class OpenProperties(val props: Properties) : SerialFormat by props
 
@@ -18,7 +21,6 @@ sealed class StringProperties(internal val config: PropertiesConf) :
     @OptIn(InternalSerializationApi::class)
     override fun <T> decodeFromString(deserializer: DeserializationStrategy<T>, string: String): T {
         val result = mutableMapOf<String, String>()
-        val separators = setOf('=', ':', ' ')
         for (line in string.logicalLines()) {
             var skipNext = false
             var kend = line.length
@@ -32,7 +34,15 @@ sealed class StringProperties(internal val config: PropertiesConf) :
             }
 
             var vbegin = line.length
+            var separatorFound = false
             for (i in kend..line.lastIndex) {
+                if (separatorFound && line[i] != ' ') {
+                    vbegin = i
+                    break
+                }
+                if (line[i] in nonBlankSeparators) {
+                    separatorFound = true
+                }
                 if (line[i] !in separators) {
                     vbegin = i
                     break

@@ -174,6 +174,26 @@ fun <K, V, U> fullOuterJoin(first: Map<K, V>, second: Map<K, U>): Map<K, Pair<V?
     return result
 }
 
+fun <K, V, R> Map<K, V>.ifContainsKey(key: K, action: (Pair<K, V>) -> R): R? {
+    return if (containsKey(key)) {
+        action(key to this.getValue(key))
+    } else {
+        null
+    }
+}
+
+fun <K, V, R> Map<K, V>.ifContainsValue(value: V, action: (Pair<K, V>) -> R): List<R> {
+    return if (containsValue(value)) {
+        val list = mutableListOf<R>()
+        filterValues { it == value }.forEach {
+            list.add(action(it.toPair()))
+        }
+        list
+    } else {
+        emptyList()
+    }
+}
+
 fun ByteArray.toHexString(): String {
     val hexChars = CharArray(size * 2)
     for (i in indices) {

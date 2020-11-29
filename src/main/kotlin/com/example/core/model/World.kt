@@ -1,7 +1,7 @@
 package com.example.core.model
 
-import com.example.core.common.JSONFile
 import com.example.core.common.Directory
+import com.example.core.common.JSONFile
 import java.io.File
 
 // https://minecraft-de.gamepedia.com/Spielstand-Speicherung#Weltordner
@@ -11,7 +11,7 @@ class World(val root: Directory) {
             val children = dir.listFiles { file: File -> !file.isDirectory } ?: emptyArray()
             val res = mutableListOf<JSONFile<PlayerStats>>()
             for (f in children) {
-                res.add(JSONFile(f, PlayerStats.serializer()))
+                res.add(JSONFile(f.toPath(), PlayerStats.serializer()))
             }
             return res
         }

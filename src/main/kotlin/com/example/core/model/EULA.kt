@@ -1,16 +1,17 @@
 package com.example.core.model
 
-import java.io.BufferedWriter
-import java.io.File
-import java.io.FileWriter
+import com.example.core.common.readFromPath
 import java.net.URL
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatterBuilder
 import java.time.format.TextStyle
 import java.util.*
 
-class EULA(val location: File) {
+class EULA(val location: Path) {
     private val urlRegex =
         Regex("EULA\\s?\\((https?://(?:www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b[-a-zA-Z0-9@:%_+.~#?&/=]*)\\)")
     private val dateTimeRegex = Regex("\\w{3}\\s\\w{3}\\s\\d{2}\\s\\d{2}(?::\\d{2}){2}\\s\\w{2,4}\\s\\d{4}")
@@ -21,34 +22,30 @@ class EULA(val location: File) {
         .toFormatter(Locale.ENGLISH)
 
     private fun change(to: String) {
-        val content = Scanner(location)
-            .useDelimiter("\\Z")
-            .next()
+        val content = readFromPath(location)
             .replace(Regex("eula=(?:true|false)"), "eula=$to")
-        BufferedWriter(FileWriter(location, false)).apply { write(content) }.close()
+        Files.newBufferedWriter(location, StandardOpenOption.WRITE).apply { write(content) }.close()
     }
 
     fun status(): Boolean {
-        return filter(Scanner(location)).contains("eula=true")
+        return filter(readFromPath(location)).contains("eula=true")
     }
 
     fun eulaURL(): URL {
-        var closeThis: Scanner? = null
         return URL(
-            urlRegex.find(Scanner(location).apply { closeThis = this }.useDelimiter("\\Z").next())
+            urlRegex.find(readFromPath(location))
                 ?.groupValues
                 ?.get(1)
                 ?: "about:blank"
-        ).also { closeThis?.close() }
+        )
     }
 
     fun timestamp(): LocalDateTime {
-        var closeThis: Scanner? = null
         return LocalDateTime.parse(
-            dateTimeRegex.find(Scanner(location).apply { closeThis = this }.useDelimiter("\\Z").next())?.value
+            dateTimeRegex.find(readFromPath(location))?.value
                 ?: "Thu Jan 01 00:00:00 UTC 1970",
             dateTimeFormat
-        ).also { closeThis?.close() }
+        )
     }
 
     fun agree() {
@@ -61,10 +58,8 @@ class EULA(val location: File) {
 
 }
 
-private fun filter(reader: Scanner): String {
-    return reader.useDelimiter("\\Z").next()
-        .lines()
+private fun filter(input: String): String {
+    return input.lines()
         .filter { !it.startsWith('#') }
         .joinToString(System.lineSeparator())
-        .also { reader.close() }
 }

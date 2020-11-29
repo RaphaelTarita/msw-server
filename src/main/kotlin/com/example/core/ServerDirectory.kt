@@ -12,10 +12,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
-import java.io.BufferedWriter
 import java.io.File
-import java.io.FileWriter
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 
 // https://minecraft-de.gamepedia.com/Minecraft-Server#Serverordner
 class ServerDirectory(val root: Directory) {
@@ -62,33 +62,67 @@ class ServerDirectory(val root: Directory) {
     val logs = Directory(root, "logs")
     val worlds = scanForWorlds(root)
     val presets = Directory(root, "presets", create = true)
-    val bannedIPs = JSONFile(File(root, "banned-ips.json"), ListSerializer(BannedIP.serializer()))
-    val bannedPlayers = JSONFile(File(root, "banned-players.json"), ListSerializer(BannedPlayer.serializer()))
-    val eula = EULA(File(root, "eula.txt"))
-    val ops = JSONFile(File(root, "ops.json"), ListSerializer(OP.serializer()))
-    val properties = File(root, "server.properties")
-    val serverIcon = existsOrNull(File(root, "sever-icon.png"))
-    val usercache = JSONFile(File(root, "usercache.json"), ListSerializer(ExpirablePlayerSignature.serializer()))
-    val whitelist = JSONFile(File(root, "whitelist.json"), ListSerializer(PlayerSignature.serializer()))
+    val bannedIPs = JSONFile(composePath(root, "banned-ips.json"), ListSerializer(BannedIP.serializer()))
+    val bannedPlayers = JSONFile(composePath(root, "banned-players.json"), ListSerializer(BannedPlayer.serializer()))
+    val eula = EULA(composePath(root, "eula.txt"))
+    val ops = JSONFile(composePath(root, "ops.json"), ListSerializer(OP.serializer()))
+    val properties = composePath(root, "server.properties")
+    val serverIcon = existsOrNull(composePath(root, "sever-icon.png"))
+    val usercache = JSONFile(composePath(root, "usercache.json"), ListSerializer(ExpirablePlayerSignature.serializer()))
+    val whitelist = JSONFile(composePath(root, "whitelist.json"), ListSerializer(PlayerSignature.serializer()))
+
+    private var activePresetID: String = "default"
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun readPreset(presetID: String): ServerProperties {
+        val presetFile = presets.listFiles { _, name ->
+            name == "$presetID.properties"
+        }!!.single().toPath()
+
+        return StringProperties.decodeFromString(ServerProperties.serializer(), readFromPath(presetFile))
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun writePreset(presetID: String, preset: ServerProperties, config: StringProperties = StringProperties.Default) {
+        val target = composePath(presets, "$presetID.properties")
+        Files.newBufferedWriter(target, StandardOpenOption.WRITE).apply {
+            write(config.encodeToString(ServerProperties.serializer(), preset))
+        }
+    }
+
+    fun swapInPreset(presetID: String) {
+        val newPreset = composePath(presets, "$presetID.properties")
+        val oldTarget = composePath(presets, "$activePresetID.properties")
+        Files.copy(properties, oldTarget)
+        Files.copy(newPreset, properties)
+        activePresetID = presetID
+    }
 
     @OptIn(ExperimentalSerializationApi::class)
     fun parseProperties(): ServerProperties {
-        return StringProperties.decodeFromString(ServerProperties.serializer(), readFromFile(properties))
+        return StringProperties.decodeFromString(ServerProperties.serializer(), readFromPath(properties))
     }
 
     @OptIn(ExperimentalSerializationApi::class)
     fun writeProperties(props: ServerProperties, config: StringProperties = StringProperties.Default) {
-        BufferedWriter(FileWriter(properties, false)).apply {
+        Files.newBufferedWriter(properties, StandardOpenOption.WRITE).apply {
             write(config.encodeToString(ServerProperties.serializer(), props))
         }.close()
     }
 
     fun addVersion(id: String): Job {
         val manifest = creator.createManifest(id)
-        val target = root.toPath().resolve("minecraft_server.$id.jar")
+        val target = composePath(root, "minecraft_server.$id.jar")
         return GlobalScope.launch {
             manager.download(manifest, target)
             serverVersions.add(target)
+        }
+    }
+
+    fun removeVersion(id: String): Boolean {
+        val target = composePath(root, "minecraft_server.$id.jar")
+        return Files.deleteIfExists(target).also {
+            serverVersions.remove(target)
         }
     }
 }

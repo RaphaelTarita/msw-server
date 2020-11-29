@@ -31,6 +31,22 @@ fun String.isNumeric(): Boolean {
     return toIntOrNull() != null
 }
 
+fun composePath(root: Path, child: Path): Path {
+    return root.resolve(child)
+}
+
+fun composePath(root: Path, child: String): Path {
+    return root.resolve(child)
+}
+
+fun composePath(root: Directory, child: Path): Path {
+    return composePath(root.toPath(), child)
+}
+
+fun composePath(root: Directory, child: String): Path {
+    return composePath(root.toPath(), child)
+}
+
 fun readFromFile(location: File): String {
     return String(Files.readAllBytes(location.toPath()))
 }
@@ -84,6 +100,10 @@ inline fun <reified E : Throwable, R> nullIfError(block: () -> R): R? {
 
 fun existsOrNull(file: File): File? {
     return if (file.exists()) file else null
+}
+
+fun existsOrNull(file: Path): Path? {
+    return if (Files.exists(file)) file else null
 }
 
 fun String.replaceMultiple(map: Map<String, String>, ignoreCase: Boolean = false): String {

@@ -22,7 +22,7 @@ For more information about bug reports, refer to the [Bug Report Issue template]
 ### 1.2 What is a feature?
 A feature is, in the scope of this repository, anything that _you_ would like to be added to the application. This can mean completely new functionalities as well as improvements of existing elements. As a discrimination from bugs, feature requests are not referring to deviations from the specified behavior. In other words, the app is behaving "correctly", but you would like to add a certain aspect. If you are writing an issue because you had an idea on how to improve the application, it is most likely a feature request. In the Feature Request template, three categories of features are described:
 
-1. Behaviors that conform to the specifiation but are greatly uncomfortable to work with as a user
+1. Behaviors that conform to the specification but are greatly uncomfortable to work with as a user
 2. The lack of a very important functionality
 3. A new idea for a helpful improvement or addition
 
@@ -34,4 +34,4 @@ You are always free to fork this repository and extend or edit it in any way you
 
 ## 3. Becoming a contributor
 
-Currently, the project is openly accessible but has only one contributuor with full editing access to the repository. If you would like to get involved in the project, contact me via E-Mail (raphael.tarita@gmail.com) or via Discord (Raph0007#3276). I'd be happy to welcome people from the community in the development team!
+Currently, the project is openly accessible but has only one contributor with full editing access to the repository. If you would like to get involved in the project, contact me via E-Mail (raphael.tarita@gmail.com) or via Discord (Raph0007#3276). I'd be happy to welcome people from the community in the development team!

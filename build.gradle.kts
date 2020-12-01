@@ -10,14 +10,6 @@ val kxs_version = "1.0.0"
 val arrow_version = "0.11.0"
 val kotest_version = "4.3.1"
 
-buildscript {
-    dependencies {
-        classpath("org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.14.4")
-    }
-}
-
-apply(plugin = "kotlinx-atomicfu")
-
 plugins {
     application
     kotlin("jvm") version "1.4.20"

@@ -8,3 +8,5 @@
 
 /allure-results
 /.allure
+
+/src/test/resources

@@ -19,7 +19,7 @@ plugins {
     id("info.solidsoft.pitest") version "1.5.1"
 }
 
-group = "com.example"
+group = "msw.server"
 version = "0.0.1"
 
 application {
@@ -88,7 +88,7 @@ allure {
 
 configure<PitestPluginExtension> {
     testPlugin.set("Kotest")
-    targetClasses.set(listOf("com.example.*"))
+    targetClasses.set(listOf("msw.server.*"))
 }
 
 val testDir1Path = "/src/test/resources/DirectoryTest"

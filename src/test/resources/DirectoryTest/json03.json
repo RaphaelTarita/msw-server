@@ -1,14 +1,1 @@
-{
-    "s": "Hello, World!",
-    "i": 42,
-    "nested1": {
-        "stringField": "stringField",
-        "doubleField": 3.1415,
-        "byteField": 2
-    },
-    "l": 999999999999999999,
-    "nested2": {
-        "dateTime": "2020-11-23 15:22:14 +0100",
-        "int": 100
-    }
-}
+{}

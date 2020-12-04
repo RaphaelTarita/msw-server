@@ -19,15 +19,26 @@ import java.time.OffsetDateTime
 
 class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojang.com/mc/game/version_manifest.json")) {
     companion object {
+        private val urlRegex =
+            "https://launchermeta\\.mojang\\.com/v1/packages/([0-9a-f]{40})/[0-9adeprw.\\-]+\\.json".toRegex()
+
         private val dlUrlPath = JsonPath.compile("$.downloads.server.url")
         private val sizePath = JsonPath.compile("$.downloads.server.size")
         private val sha1Path = JsonPath.compile("$.downloads.server.sha1")
+
         private const val errorMsg = "Could not create requested download manifest:"
 
         private fun stringify(range: ClosedRange<OffsetDateTime>) = "${range.start} - ${range.endInclusive}"
 
         private fun parse(contents: Deferred<String>): Versions {
             return Json.decodeFromString(runBlocking { contents.await() })
+        }
+
+        private fun extractSHA(url: URL): String {
+            return urlRegex.find(url.toString())
+                ?.groupValues
+                ?.get(1)
+                ?: throw DownloadException(url, "URL does not match URL regex (could not extract SHA-1)")
         }
     }
 
@@ -78,13 +89,12 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
         document: String,
         id: String,
         type: VersionType,
-        sha1: String,
         time: OffsetDateTime,
         releaseTime: OffsetDateTime
     ): DownloadManifest? {
         val ctx = JsonPath.parse(document)
         return nullIfError<JsonPathException, DownloadManifest?> {
-            val manifest = DownloadManifest(
+            DownloadManifest(
                 id,
                 URL(ctx.read(dlUrlPath)),
                 type,
@@ -93,7 +103,6 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
                 ctx.read(sizePath),
                 ctx.read(sha1Path)
             )
-            return if (sha1.isBlank() || manifest.sha1 == sha1) manifest else null
         }
     }
 
@@ -107,10 +116,11 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
     ): List<DownloadManifest> {
         val manifests = parsed.versions
             .asSequence()
+            .filter { id.isBlank() || it.id == id }
+            .filter { sha1.isBlank() || sha1 == extractSHA(it.url) }
             .filter { type == VersionType.ALL || type == it.type }
             .filter { it.time in timeRange }
             .filter { it.releaseTime in releaseTimeRange }
-            .filter { id.isBlank() || it.id == id }
             .toList()
             .map {
                 GlobalScope.async {
@@ -118,7 +128,6 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
                         readContent(it.url),
                         it.id,
                         it.type,
-                        sha1,
                         it.time,
                         it.releaseTime
                     )

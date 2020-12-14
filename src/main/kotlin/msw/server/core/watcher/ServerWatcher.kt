@@ -16,12 +16,13 @@ class ServerWatcher(private val directory: ServerDirectory) {
         const val STOP_COMMAND = "stop"
     }
 
-    private val mutex = Mutex()
+    private val reserveMutex = Mutex()
+    private val launchMutex = Mutex()
     private val instances = mutableMapOf<Int, Pair<Process, InstanceConfiguration>>()
     private val portMappings = HashBiMap.create<Int, World>()
 
     suspend fun launchInstance(port: Int, world: World, config: InstanceConfiguration) {
-        mutex.withLock {
+        reserveMutex.withLock {
             require(!portMappings.containsKey(port)) {
                 "Port $port is already in use by instance running on world '${portMappings[port]}'"
             }
@@ -45,7 +46,7 @@ class ServerWatcher(private val directory: ServerDirectory) {
             command.add("nogui")
         }
 
-        mutex.withLock {
+        launchMutex.withLock {
             directory.activatePreset(config.presetID)
             instances[port] = directory.root.runCommand(command) to config
         }

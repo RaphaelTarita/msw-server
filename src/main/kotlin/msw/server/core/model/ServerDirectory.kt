@@ -1,10 +1,12 @@
-package msw.server.core
+package msw.server.core.model
 
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import msw.server.core.common.*
 import msw.server.core.model.*
 import msw.server.core.model.props.ServerProperties
@@ -13,12 +15,17 @@ import msw.server.core.versions.DownloadManager
 import msw.server.core.versions.DownloadManifest
 import msw.server.core.versions.ManifestCreator
 import java.io.File
+import java.lang.IllegalArgumentException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
+import java.nio.file.StandardCopyOption
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.name
+import kotlin.io.path.nameWithoutExtension
 
 // https://minecraft-de.gamepedia.com/Minecraft-Server#Serverordner
-class ServerDirectory(val root: Directory) {
+@OptIn(ExperimentalSerializationApi::class)
+class ServerDirectory(val root: Directory, private val propertiesCodec: StringProperties = StringProperties.Default) {
     companion object {
         private val creator = ManifestCreator()
         private val manager = DownloadManager()
@@ -55,6 +62,12 @@ class ServerDirectory(val root: Directory) {
                 .map { it.first }
                 .toMutableList()
         }
+
+        @OptIn(ExperimentalPathApi::class)
+        private fun Path.serverVersionID(): String {
+            return nameWithoutExtension
+                .substringAfter('.', "")
+        }
     }
 
     val serverVersions = scanForVersions(root)
@@ -71,43 +84,36 @@ class ServerDirectory(val root: Directory) {
     val usercache = JSONFile(composePath(root, "usercache.json"), ListSerializer(ExpirablePlayerSignature.serializer()))
     val whitelist = JSONFile(composePath(root, "whitelist.json"), ListSerializer(PlayerSignature.serializer()))
 
-    private var activePresetID: String = "default"
-
-    @OptIn(ExperimentalSerializationApi::class)
-    fun readPreset(presetID: String): ServerProperties {
-        val presetFile = presets.listFiles { _, name ->
-            name == "$presetID.properties"
-        }!!.single().toPath()
-
-        return StringProperties.decodeFromString(ServerProperties.serializer(), readFromPath(presetFile))
+    init {
+        addPreset("default", ServerProperties(), true)
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
-    fun writePreset(presetID: String, preset: ServerProperties, config: StringProperties = StringProperties.Default) {
-        val target = composePath(presets, "$presetID.properties")
-        Files.newBufferedWriter(target, StandardOpenOption.WRITE).apply {
-            write(config.encodeToString(ServerProperties.serializer(), preset))
+    fun addPreset(presetID: String, preset: ServerProperties, force: Boolean = false) {
+        if (!force) {
+            require("$presetID.properties" !in presets.list()!!) {
+                "Preset ID '$presetID' already exists!"
+            }
         }
-    }
 
-    fun swapInPreset(presetID: String) {
-        val newPreset = composePath(presets, "$presetID.properties")
-        val oldTarget = composePath(presets, "$activePresetID.properties")
-        Files.copy(properties, oldTarget)
-        Files.copy(newPreset, properties)
-        activePresetID = presetID
-    }
-
-    @OptIn(ExperimentalSerializationApi::class)
-    fun parseProperties(): ServerProperties {
-        return StringProperties.decodeFromString(ServerProperties.serializer(), readFromPath(properties))
-    }
-
-    @OptIn(ExperimentalSerializationApi::class)
-    fun writeProperties(props: ServerProperties, config: StringProperties = StringProperties.Default) {
-        Files.newBufferedWriter(properties, StandardOpenOption.WRITE).apply {
-            write(config.encodeToString(ServerProperties.serializer(), props))
+        Files.newBufferedWriter(composePath(presets, "$presetID.properties")).apply {
+            write(propertiesCodec.encodeToString(preset))
         }.close()
+    }
+
+    fun readPreset(presetID: String): ServerProperties {
+        return propertiesCodec.decodeFromString(readFromPath(composePath(presets, "$presetID.properties")))
+    }
+
+    fun removePreset(presetID: String) {
+        Files.deleteIfExists(composePath(presets, "$presetID.properties"))
+    }
+
+    fun activatePreset(presetID: String) {
+        Files.copy(composePath(presets, "$presetID.properties"), properties, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    fun parseProperties(): ServerProperties {
+        return StringProperties.decodeFromString(readFromPath(properties))
     }
 
     fun addVersion(id: String): Job {
@@ -124,5 +130,29 @@ class ServerDirectory(val root: Directory) {
         return Files.deleteIfExists(target).also {
             serverVersions.remove(target)
         }
+    }
+
+    fun getWorld(name: String): World {
+        val matches = worlds.filter { it.name == name }
+        require(matches.isNotEmpty()) {
+            "No world with name $name found"
+        }
+        check(matches.size <= 1) {
+            "Multiple worlds with name $name registered"
+        }
+
+        return matches.single()
+    }
+
+    fun getVersion(id: String): Path {
+        val matches = serverVersions.filter { it.serverVersionID() == id }
+        require(matches.isNotEmpty()) {
+            "No version with id $id found"
+        }
+        check(matches.size <= 1) {
+            "Multiple versions with id $id registered"
+        }
+
+        return matches.single()
     }
 }

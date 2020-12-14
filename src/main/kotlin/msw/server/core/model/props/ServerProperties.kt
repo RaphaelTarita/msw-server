@@ -85,6 +85,7 @@ data class ServerProperties(
     @SerialName("max-world-size")
     val maxWorldSize: Int = 29999984,
     @SerialName("function-permission-level")
+    @Serializable(with = LevelSerializer::class)
     val functionPermissionLevel: OPLevel = OPLevel.GAME_MASTER,
     @SerialName("rate-limit")
     val rateLimit: Int = 0,

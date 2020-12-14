@@ -4,6 +4,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.properties.Properties
+import java.security.MessageDigest
 import kotlin.math.min
 
 private val nonBlankSeparators = setOf('=', ':')
@@ -114,6 +115,31 @@ sealed class StringProperties(internal val config: PropertiesConf) :
 
     fun <T> decodeWithComments(deserializer: DeserializationStrategy<T>, string: String): Pair<T, Map<Int, String>> {
         return decodeFromString(deserializer, string) to string.indexedComments(config)
+    }
+
+    fun <T> semanticHash(
+        deserializer: DeserializationStrategy<T>,
+        string: String,
+        considerComments: Boolean = false,
+        algorithm: String = "SHA-1"
+    ): String {
+        val md = MessageDigest.getInstance(algorithm)
+
+        val comments: Map<Int, String>?
+        val obj = if (considerComments) {
+            val pair = decodeWithComments(deserializer, string)
+            comments = pair.second
+            pair.first
+        } else {
+            comments = null
+            decodeFromString(deserializer, string)
+        }
+
+        md.update(obj.toByteArray())
+        if (considerComments) {
+            md.update(comments.toByteArray())
+        }
+        return md.digest().toHexString()
     }
 }
 

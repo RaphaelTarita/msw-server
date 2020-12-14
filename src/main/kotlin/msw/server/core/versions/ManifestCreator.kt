@@ -5,22 +5,24 @@ import com.jayway.jsonpath.JsonPathException
 import io.ktor.client.*
 import io.ktor.client.engine.apache.*
 import io.ktor.client.request.*
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import msw.server.core.common.ExpirableCache
 import msw.server.core.common.nullIfError
 import msw.server.core.versions.model.VersionType
 import msw.server.core.versions.model.Versions
 import java.net.URL
 import java.time.OffsetDateTime
 
-class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojang.com/mc/game/version_manifest.json")) {
+class ManifestCreator(
+    private val initUrl: URL = URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"),
+    cacheRefresh: Long = 60_000L
+) {
     companion object {
-        private val urlRegex =
-            "https://launchermeta\\.mojang\\.com/v1/packages/([0-9a-f]{40})/[0-9adeprw.\\-]+\\.json".toRegex()
+        private const val SPAM_PROTECTION_MILLIS = 10L
+        private val updateRate = (SPAM_PROTECTION_MILLIS / 10)..SPAM_PROTECTION_MILLIS
+        private var spamProtectionTimestamp = System.currentTimeMillis()
 
         private val dlUrlPath = JsonPath.compile("$.downloads.server.url")
         private val sizePath = JsonPath.compile("$.downloads.server.size")
@@ -33,13 +35,6 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
         private fun parse(contents: Deferred<String>): Versions {
             return Json.decodeFromString(runBlocking { contents.await() })
         }
-
-        private fun extractSHA(url: URL): String {
-            return urlRegex.find(url.toString())
-                ?.groupValues
-                ?.get(1)
-                ?: throw DownloadException(url, "URL does not match URL regex (could not extract SHA-1)")
-        }
     }
 
     private val client = HttpClient(Apache) {
@@ -49,6 +44,7 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
         }
     }
     private val contents = GlobalScope.async { readContent() }
+    private val cache = ExpirableCache<URL, DownloadManifest>(cacheRefresh)
 
     private fun constructErrorMsg(
         id: String,
@@ -82,28 +78,37 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
     }
 
     private suspend fun readContent(url: URL = initUrl): String {
+        while (System.currentTimeMillis() - spamProtectionTimestamp < SPAM_PROTECTION_MILLIS) {
+            delay(updateRate.random())
+        }
+        spamProtectionTimestamp = System.currentTimeMillis()
         return client.get(url)
     }
 
-    private fun findUrlInDocument(
-        document: String,
+    private suspend fun findUrlInDocument(
+        documentURL: URL,
         id: String,
+        sha1: String,
         type: VersionType,
         time: OffsetDateTime,
         releaseTime: OffsetDateTime
     ): DownloadManifest? {
-        val ctx = JsonPath.parse(document)
-        return nullIfError<JsonPathException, DownloadManifest?> {
-            DownloadManifest(
-                id,
-                URL(ctx.read(dlUrlPath)),
-                type,
-                time,
-                releaseTime,
-                ctx.read(sizePath),
-                ctx.read(sha1Path)
-            )
+        val res = nullIfError<JsonPathException, DownloadManifest?> {
+            cache.suspendingRunOrGet(documentURL) {
+                val ctx = JsonPath.parse(readContent(it))
+                DownloadManifest(
+                    id,
+                    withContext(Dispatchers.IO) { URL(ctx.read(dlUrlPath)) },
+                    type,
+                    time,
+                    releaseTime,
+                    ctx.read(sizePath),
+                    ctx.read(sha1Path)
+                )
+            }
         }
+
+        return if (sha1.isBlank() || res?.sha1 == sha1) res else null
     }
 
     private fun internalCreate(
@@ -117,7 +122,6 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
         val manifests = parsed.versions
             .asSequence()
             .filter { id.isBlank() || it.id == id }
-            .filter { sha1.isBlank() || sha1 == extractSHA(it.url) }
             .filter { type == VersionType.ALL || type == it.type }
             .filter { it.time in timeRange }
             .filter { it.releaseTime in releaseTimeRange }
@@ -125,8 +129,9 @@ class ManifestCreator(private val initUrl: URL = URL("https://launchermeta.mojan
             .map {
                 GlobalScope.async {
                     findUrlInDocument(
-                        readContent(it.url),
+                        it.url,
                         it.id,
+                        sha1,
                         it.type,
                         it.time,
                         it.releaseTime

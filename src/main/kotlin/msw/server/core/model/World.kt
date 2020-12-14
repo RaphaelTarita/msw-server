@@ -2,6 +2,7 @@ package msw.server.core.model
 
 import msw.server.core.common.Directory
 import msw.server.core.common.JSONFile
+import msw.server.core.common.composePath
 import java.io.File
 
 // https://minecraft-de.gamepedia.com/Spielstand-Speicherung#Weltordner
@@ -17,6 +18,7 @@ class World(val root: Directory) {
         }
     }
 
+    val name: String = root.name // TODO: Acquire from levelData, using lazy delegation
     val advancements = Directory(root, "advancements")
     val data = Directory(root, "data")
     val datapacks = Directory(root, "datapacks", require = false)
@@ -28,8 +30,19 @@ class World(val root: Directory) {
     val poi = Directory(root, "poi", require = false)
     val region = Directory(root, "region")
     val stats = collectStats(Directory(root, "stats"))
-    val levelData = File(root, "level.dat")
-    val levelDataOld = File(root, "level.dat")
-    val ressources = File(root, "resources.zip")
-    val sessionLock = File(root, "session.lock")
+    val levelData = composePath(root, "level.dat")
+    val levelDataOld = composePath(root, "level.dat")
+    val ressources = composePath(root, "resources.zip")
+    val sessionLock = composePath(root, "session.lock")
+
+    override fun toString(): String = name
+
+    override fun equals(other: Any?): Boolean {
+        if (other === this) return true
+        return if (other !is World) false else other.name == this.name
+    }
+
+    override fun hashCode(): Int {
+        return name.hashCode()
+    }
 }

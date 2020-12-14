@@ -30,8 +30,9 @@ repositories {
     jcenter()
     mavenLocal()
     mavenCentral()
-    maven { url = uri("https://kotlin.bintray.com/ktor") }
-    maven { url = uri("https://dl.bintray.com/arrow-kt/arrow-kt/") }
+    maven("https://jitpack.io")
+    maven("https://kotlin.bintray.com/ktor")
+    maven("https://dl.bintray.com/arrow-kt/arrow-kt/")
 }
 
 dependencies {
@@ -56,6 +57,8 @@ dependencies {
     implementation("io.arrow-kt:arrow-core:$arrow_version")
     implementation("io.arrow-kt:arrow-syntax:$arrow_version")
     kapt("io.arrow-kt:arrow-meta:$arrow_version")
+    implementation("com.github.MrPNG:KotlinNBT:1.0.0")
+
 
     // testing
     testImplementation("io.kotest:kotest-runner-junit5:$kotest_version")

@@ -1,6 +1,9 @@
 package msw.server.core.common
 
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
+import java.io.ObjectOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -189,3 +192,76 @@ fun ByteArray.toHexString(): String {
     }
     return String(hexChars)
 }
+
+fun Any?.toByteArray(): ByteArray {
+    if (this == null) return ByteArray(0)
+
+    val baos = ByteArrayOutputStream()
+    ObjectOutputStream(baos).apply { writeObject(this) }.close()
+    return baos.toByteArray()
+}
+
+fun Directory.runCommand(command: List<String>): Process {
+    try {
+        return ProcessBuilder(command)
+            .directory(this)
+            .redirectOutput(ProcessBuilder.Redirect.PIPE)
+            .redirectError(ProcessBuilder.Redirect.PIPE)
+            .start()
+    } catch (ex: IOException) {
+        throw IllegalArgumentException("command $command is invalid")
+    }
+}
+
+fun Directory.runCommand(command: String): Process = runCommand(command.commandParts())
+
+fun String.commandParts(): List<String> {
+    if (isEmpty()) return emptyList()
+    var remaining = this
+    val res = mutableListOf<String>()
+    val space = "\\s".toRegex()
+    val quote = "[\"']".toRegex()
+
+    while (remaining.isNotEmpty()) {
+        var candidate = remaining.substring(0, remaining.indexOf(space, notFound = remaining.length))
+        if (candidate.contains(quote)) {
+            val strippedRemaining = remaining.removePrefix(candidate)
+            candidate += strippedRemaining.substring(0, strippedRemaining.indexOf(quote) + 1)
+        }
+        res.add(candidate)
+        remaining = remaining.removePrefix(candidate).trimStart()
+    }
+    return res
+}
+
+fun String.indexOf(regex: Regex, startIndex: Int = 0, notFound: Int = 0): Int {
+    return regex.find(this.substring(startIndex))?.range?.start ?: notFound
+}
+
+fun hashCode(vararg vals: Any?, prime: Int = 31): Int {
+    var res = 0
+    for (v in vals) {
+        res += v.hashCode()
+        res *= prime
+    }
+    return res
+}
+
+val Long.b: MemoryAmount
+    get() = MemoryAmount(this, MemoryUnit.BYTES)
+val Long.k: MemoryAmount
+    get() = MemoryAmount(this, MemoryUnit.KIBIBYTES)
+val Long.m
+    get() = MemoryAmount(this, MemoryUnit.MEBIBYTES)
+val Long.g: MemoryAmount
+    get() = MemoryAmount(this, MemoryUnit.GIBIBYTES)
+
+
+
+
+
+
+
+
+
+

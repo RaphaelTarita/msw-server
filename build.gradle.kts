@@ -8,6 +8,8 @@ val guava_version = "29.0-jre"
 val jsonpath_version = "2.4.0"
 val kxs_version = "1.0.0"
 val arrow_version = "0.11.0"
+val proto_version = "3.14.0"
+val grpc_version = "1.0.0"
 val kotest_version = "4.3.1"
 
 plugins {
@@ -17,6 +19,8 @@ plugins {
     kotlin("kapt") version "1.4.20"
     id("io.qameta.allure") version "2.8.1"
     id("info.solidsoft.pitest") version "1.5.1"
+    id("com.toasttab.protokt") version "0.5.4"
+    id("idea")
 }
 
 group = "msw.server"
@@ -39,26 +43,19 @@ dependencies {
     // stdlib
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version")
 
+    // grpc
+    implementation("com.google.protobuf:protobuf-java:$proto_version")
+    implementation("io.grpc:grpc-kotlin-stub:$grpc_version")
+
     // ktor
-    implementation("io.ktor:ktor-server-core:$ktor_version")
     implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-server-tomcat:$ktor_version")
     implementation("io.ktor:ktor-client-apache:$ktor_version")
-    implementation("io.ktor:ktor-network:$ktor_version")
-    implementation("io.ktor:ktor-network-tls:$ktor_version")
-    implementation("ch.qos.logback:logback-classic:$logback_version")
-    testImplementation("io.ktor:ktor-server-tests:$ktor_version")
 
     // additionals
     implementation("com.google.guava:guava:$guava_version")
     implementation("com.jayway.jsonpath:json-path:$jsonpath_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kxs_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:$kxs_version")
-    implementation("io.arrow-kt:arrow-core:$arrow_version")
-    implementation("io.arrow-kt:arrow-syntax:$arrow_version")
-    kapt("io.arrow-kt:arrow-meta:$arrow_version")
-    implementation("com.github.MrPNG:KotlinNBT:1.0.0")
-
 
     // testing
     testImplementation("io.kotest:kotest-runner-junit5:$kotest_version")
@@ -67,6 +64,22 @@ dependencies {
     testImplementation("io.kotest:kotest-property:$kotest_version")
     testImplementation("io.kotest:kotest-extensions-allure:$kotest_version")
     testImplementation("io.kotest:kotest-plugins-pitest:$kotest_version")
+}
+
+protokt {
+    generateGrpc = true
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDir("src")
+        }
+    }
+}
+
+tasks.withType<JavaCompile>().all {
+    enabled = false
 }
 
 tasks.withType<KotlinCompile>().all {

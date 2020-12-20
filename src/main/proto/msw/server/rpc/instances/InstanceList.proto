@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package msw.server.rpc.instances;
+
+import "msw/server/rpc/instances/Instance.proto";
+
+message InstanceList {
+  repeated Instance instances = 1;
+}

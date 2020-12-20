@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package msw.server.rpc.instances;
+
+message Instance {
+  int32 ordinal = 1;
+  int32 port = 2;
+  string worldName = 3;
+}

@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package msw.server.core.watcher;
+
+message Port {
+  int32 num = 1;
+}

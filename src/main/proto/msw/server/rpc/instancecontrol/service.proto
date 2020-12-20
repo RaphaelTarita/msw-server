@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package msw.server.rpc.instancecontrol;
+
+import "msw/server/core/watcher/InstanceConfiguration.proto";
+import "msw/server/core/watcher/ServerResponse.proto";
+import "msw/server/core/watcher/Port.proto";
+import "msw/server/rpc/instancecontrol/World.proto";
+import "msw/server/rpc/instancecontrol/LogLine.proto";
+import "msw/server/rpc/instancecontrol/CommandRequest.proto";
+
+service InstanceControl {
+  rpc GetPortForWorld(World) returns (msw.server.core.watcher.Port) {}
+  rpc GetWorldOnPort(msw.server.core.watcher.Port) returns (World) {}
+  rpc GetConfig(msw.server.core.watcher.Port) returns (msw.server.core.watcher.InstanceConfiguration) {}
+  rpc GetLog(msw.server.core.watcher.Port) returns (stream LogLine) {}
+  rpc SendCommand(CommandRequest) returns (msw.server.core.watcher.ServerResponse) {}
+}

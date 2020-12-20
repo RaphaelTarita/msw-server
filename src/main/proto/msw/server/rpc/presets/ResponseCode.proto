@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package msw.server.rpc.presets;
+
+enum ResponseCode {
+  CREATED = 0;
+  MODIFIED = 1;
+  DELETED = 2;
+  UNCHANGED = 3;
+  ERROR = 4;
+}

@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package msw.server.rpc.presets;
+
+message PresetIDList {
+  repeated string ids = 1;
+}

@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package msw.server.rpc.instancecontrol;
+
+message LogLine {
+  string line = 1;
+}

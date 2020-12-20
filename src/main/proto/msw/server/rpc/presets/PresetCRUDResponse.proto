@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package msw.server.rpc.presets;
+
+import "msw/server/rpc/presets/ResponseCode.proto";
+
+message PresetCRUDResponse {
+  ResponseCode code = 1;
+  string message = 2;
+}

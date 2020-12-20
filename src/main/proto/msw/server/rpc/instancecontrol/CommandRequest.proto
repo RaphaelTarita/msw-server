@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package msw.server.rpc.instancecontrol;
+
+message CommandRequest {
+  int32 port = 1;
+  string cmd = 2;
+}

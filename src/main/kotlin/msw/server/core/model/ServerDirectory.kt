@@ -88,20 +88,34 @@ class ServerDirectory(val root: Directory, private val propertiesCodec: StringPr
         addPreset("default", ServerProperties(), true)
     }
 
-    fun addPreset(presetID: String, preset: ServerProperties, force: Boolean = false) {
-        if (!force) {
-            require("$presetID.properties" !in presets.list()!!) {
-                "Preset ID '$presetID' already exists!"
-            }
-        }
+    fun presetIDs(): List<String> {
+        return presets.listFiles()!!.map { it.nameWithoutExtension }
+    }
 
+    fun presetByID(presetID: String): String {
+        return readFromPath(composePath(presets, "$presetID.properties"))
+    }
+
+    fun presetExists(presetID: String): Boolean = presetIDs().contains(presetID)
+
+    fun writePreset(presetID: String, propertiesString: String) {
         Files.newBufferedWriter(composePath(presets, "$presetID.properties")).apply {
-            write(propertiesCodec.encodeToString(preset))
+            write(propertiesString)
         }.close()
     }
 
+    fun addPreset(presetID: String, preset: ServerProperties, force: Boolean = false) {
+        if (!force) {
+            if("$presetID.properties" !in presets.list()!!) {
+                throw FileAlreadyExistsException(File(presets, "$presetID.properties"), null, "Preset ID '$presetID' already exists!")
+            }
+        }
+
+        writePreset(presetID, propertiesCodec.encodeToString(preset))
+    }
+
     fun readPreset(presetID: String): ServerProperties {
-        return propertiesCodec.decodeFromString(readFromPath(composePath(presets, "$presetID.properties")))
+        return propertiesCodec.decodeFromString(presetByID(presetID))
     }
 
     fun removePreset(presetID: String) {

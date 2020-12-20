@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package msw.server.core.watcher;
+
+import "msw/server/core/watcher/MemoryUnit.proto";
+
+message MemoryAmount {
+  int64 amount = 1;
+  MemoryUnit unit = 2;
+}

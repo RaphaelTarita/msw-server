@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package msw.server.core.watcher;
+
+enum MemoryUnit {
+  BYTES = 0;
+  KIBIBYTES = 1;
+  MEBIBYTES = 2;
+  GIBIBYTES = 3;
+}

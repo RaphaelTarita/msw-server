@@ -1,5 +1,11 @@
 package msw.server.core.common
 
+import kotlinx.coroutines.*
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.StringFormat
+import msw.server.core.watcher.MemoryAmount
+import msw.server.core.watcher.MemoryUnit
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -20,6 +26,11 @@ fun String.isNumeric(): Boolean {
     return toIntOrNull() != null
 }
 
+fun String.truncate(maxlen: Int, suffix: String = "..."): String {
+    val internalMaxlen = maxlen - suffix.length
+    return if (length < internalMaxlen) this else substring(0, internalMaxlen) + suffix
+}
+
 fun composePath(root: Path, child: Path): Path {
     return root.resolve(child)
 }
@@ -36,16 +47,16 @@ fun composePath(root: Directory, child: String): Path {
     return composePath(root.toPath(), child)
 }
 
-fun readFromFile(location: File): String {
-    return String(Files.readAllBytes(location.toPath()))
-}
-
 fun readFromPath(path: Path): String {
-    return readFromFile(path.toFile())
+    return String(Files.readAllBytes(path))
 }
 
 fun readFromPath(path: String): String {
     return readFromPath(Paths.get(path))
+}
+
+fun readFromFile(location: File): String {
+    return readFromPath(location.toPath())
 }
 
 fun Path.renameTo(new: String): Path {
@@ -70,6 +81,11 @@ fun Path.sha1(bufferSize: Int = 4096): String {
 }
 
 fun File.sha1(bufferSize: Int = 4096) = toPath().sha1(bufferSize)
+
+@OptIn(ExperimentalSerializationApi::class)
+fun semanticEquivalence(lop: String, rop: String, format: StringFormat, semantics: DeserializationStrategy<*>): Boolean {
+    return format.decodeFromString(semantics, lop) == format.decodeFromString(semantics, rop)
+}
 
 inline fun <reified E> ignoreError(block: () -> Unit) {
     try {
@@ -197,7 +213,7 @@ fun Any?.toByteArray(): ByteArray {
     if (this == null) return ByteArray(0)
 
     val baos = ByteArrayOutputStream()
-    ObjectOutputStream(baos).apply { writeObject(this) }.close()
+    ObjectOutputStream(baos).apply { writeObject(this@toByteArray) }.close()
     return baos.toByteArray()
 }
 
@@ -234,6 +250,21 @@ fun String.commandParts(): List<String> {
     return res
 }
 
+fun Process.addTerminationCallback(scope: CoroutineScope = GlobalScope, callback: Process.() -> Unit): Process {
+    try {
+        exitValue()
+        callback()
+    } catch (exc: IllegalThreadStateException) {
+        scope.launch {
+            ignoreError<InterruptedException> {
+                withContext(Dispatchers.IO) { waitFor() }
+            }
+            callback()
+        }
+    }
+    return this
+}
+
 fun String.indexOf(regex: Regex, startIndex: Int = 0, notFound: Int = 0): Int {
     return regex.find(this.substring(startIndex))?.range?.start ?: notFound
 }
@@ -247,16 +278,38 @@ fun hashCode(vararg vals: Any?, prime: Int = 31): Int {
     return res
 }
 
-val Long.b: MemoryAmount
-    get() = MemoryAmount(this, MemoryUnit.BYTES)
-val Long.k: MemoryAmount
-    get() = MemoryAmount(this, MemoryUnit.KIBIBYTES)
-val Long.m
-    get() = MemoryAmount(this, MemoryUnit.MEBIBYTES)
-val Long.g: MemoryAmount
-    get() = MemoryAmount(this, MemoryUnit.GIBIBYTES)
+val Long.bytes: MemoryAmount
+    get() = MemoryAmount {
+        amount = this@bytes
+        unit = MemoryUnit.BYTES
+    }
+val Long.kibibytes: MemoryAmount
+    get() = MemoryAmount {
+        amount = this@kibibytes
+        unit = MemoryUnit.KIBIBYTES
+    }
+val Long.mebibytes: MemoryAmount
+    get() = MemoryAmount {
+        amount = this@mebibytes
+        unit = MemoryUnit.MEBIBYTES
+    }
+val Long.gibibytes: MemoryAmount
+    get() = MemoryAmount {
+        amount = this@gibibytes
+        unit = MemoryUnit.GIBIBYTES
+    }
 
-
+fun MemoryAmount.toCommandString(): String {
+    return "$amount${
+        when (unit) {
+            is MemoryUnit.BYTES -> ""
+            is MemoryUnit.KIBIBYTES -> "k"
+            is MemoryUnit.MEBIBYTES -> "m"
+            is MemoryUnit.GIBIBYTES -> "g"
+            is MemoryUnit.UNRECOGNIZED -> throw IllegalArgumentException("Unrecognized memory unit: '$unit'")
+        }
+    }"
+}
 
 
 

@@ -3,11 +3,14 @@ package msw.server.core.watcher
 import com.google.common.collect.HashBiMap
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import msw.server.core.common.MemoryAmount
-import msw.server.core.common.m
+import msw.server.core.common.addTerminationCallback
+import msw.server.core.common.mebibytes
 import msw.server.core.common.runCommand
+import msw.server.core.common.toCommandString
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.World
+import msw.server.rpc.instances.Instance
+import msw.server.rpc.instances.InstanceList
 
 class ServerWatcher(private val directory: ServerDirectory) {
     companion object {
@@ -23,54 +26,95 @@ class ServerWatcher(private val directory: ServerDirectory) {
 
     suspend fun launchInstance(port: Int, world: World, config: InstanceConfiguration) {
         reserveMutex.withLock {
-            require(!portMappings.containsKey(port)) {
+            check(!portMappings.containsKey(port)) {
                 "Port $port is already in use by instance running on world '${portMappings[port]}'"
             }
-            require(!portMappings.containsValue(world)) {
+            check(!portMappings.containsValue(world)) {
                 "World $world is already in use by instance running on port ${portMappings.inverse()[world]}"
             }
             portMappings[port] = world
         }
 
-        val command = mutableListOf<String>()
-        command.add("java")
-        command.add("-Xms${config.heapInit}")
-        command.add("-Xmx${config.heapMax}")
-        command.add("-jar")
-        command.add("\"${directory.root.toPath().relativize(config.version)}\"")
-        command.add("--port")
-        command.add(port.toString())
-        command.add("--world")
-        command.add("\"${directory.root.toPath().relativize(world.root.toPath())}\"")
-        if (!config.guiEnabled) {
-            command.add("nogui")
-        }
+        try {
+            val command = mutableListOf<String>()
+            command.add("java")
+            command.add("-Xms${(config.heapInit ?: 1024L.mebibytes).toCommandString()}")
+            command.add("-Xmx${(config.heapMax ?: 1024L.mebibytes).toCommandString()}")
+            command.add("-jar")
+            command.add("\"${directory.root.toPath().relativize(directory.getVersion(config.versionID))}\"")
+            command.add("--port")
+            command.add(port.toString())
+            command.add("--world")
+            command.add("\"${directory.root.toPath().relativize(world.root.toPath())}\"")
+            if (!config.guiEnabled) {
+                command.add("nogui")
+            }
 
-        launchMutex.withLock {
-            directory.activatePreset(config.presetID)
-            instances[port] = directory.root.runCommand(command) to config
+            launchMutex.withLock {
+                directory.activatePreset(config.presetID)
+                instances[port] = directory
+                    .root
+                    .runCommand(command)
+                    .addTerminationCallback {
+                        portMappings.remove(port)
+                        instances.remove(port)
+                    } to config
+            }
+        } catch (exc: Exception) {
+            portMappings.remove(port)
+            instances.remove(port)
+            throw exc
         }
     }
 
     suspend fun launchInstance(
         port: Int,
         worldName: String,
+        config: InstanceConfiguration
+    ) = launchInstance(port, directory.getWorld(worldName), config)
+
+    suspend fun launchInstance(
+        port: Int,
+        worldName: String,
         versionID: String,
         presetID: String,
-        heapInit: MemoryAmount = 1024L.m,
-        heapMax: MemoryAmount = 1024L.m,
+        heapInit: MemoryAmount = 1024L.mebibytes,
+        heapMax: MemoryAmount = 1024L.mebibytes,
         guiEnabled: Boolean = false
     ) = launchInstance(
         port,
-        directory.getWorld(worldName),
-        InstanceConfiguration(
-            directory.getVersion(versionID),
-            presetID,
-            heapInit,
-            heapMax,
-            guiEnabled
-        )
+        worldName,
+        InstanceConfiguration {
+            this.versionID = versionID
+            this.presetID = presetID
+            this.heapInit = heapInit
+            this.heapMax = heapMax
+            this.guiEnabled = guiEnabled
+        }
     )
+
+    fun getInstances(): InstanceList {
+        var counter = 1
+        return InstanceList {
+            instances = this@ServerWatcher.instances.map {
+                Instance {
+                    ordinal = counter++
+                    port = it.key
+                    worldName = portMappings[it.key]!!.name
+                }
+            }
+        }
+    }
+
+    fun worldOnPort(port: Int): World {
+        return portMappings[port] ?: throw IllegalArgumentException(ERR_NO_INSTANCE_ON_PORT + port)
+    }
+
+    fun portForWorld(world: World): Int {
+        return portMappings.inverse()[world] ?: throw IllegalArgumentException(ERR_NO_INSTANCE_ON_WORLD + world)
+    }
+
+    fun portForWorld(worldName: String): Int = portForWorld(directory.getWorld(worldName))
 
     fun instanceOnPort(port: Int): Process {
         return instances[port]?.first ?: throw IllegalArgumentException(ERR_NO_INSTANCE_ON_PORT + port)
@@ -100,7 +144,7 @@ class ServerWatcher(private val directory: ServerDirectory) {
 
     fun sendCommand(port: Int, command: String) {
         val instance = instances[port]?.first ?: throw IllegalArgumentException(ERR_NO_INSTANCE_ON_PORT + port)
-        instance.outputStream.apply { write(command.toByteArray()) }.flush()
+        instance.outputStream.apply { write((command + '\n').toByteArray()) }.flush()
     }
 
     fun sendCommand(world: World, command: String) {

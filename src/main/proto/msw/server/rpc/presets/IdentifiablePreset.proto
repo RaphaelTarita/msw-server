@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package msw.server.rpc.presets;
+
+message IdentifiablePreset {
+  string id = 1;
+  string props = 2;
+}

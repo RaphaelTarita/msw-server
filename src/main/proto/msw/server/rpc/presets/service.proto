@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package msw.server.rpc.presets;
+
+import "msw/server/rpc/presets/PresetIDRegex.proto";
+import "msw/server/rpc/presets/PresetIDList.proto";
+import "msw/server/rpc/presets/PresetID.proto";
+import "msw/server/rpc/presets/PropertiesString.proto";
+import "msw/server/rpc/presets/IdentifiablePreset.proto";
+import "msw/server/rpc/presets/PresetCRUDResponse.proto";
+
+service Presets {
+  rpc GetPresetIDs(PresetIDRegex) returns (PresetIDList) {}
+  rpc GetPreset(PresetID) returns (PropertiesString) {}
+  rpc SetPreset(IdentifiablePreset) returns (PresetCRUDResponse) {}
+  rpc DeletePreset(PresetID) returns (PresetCRUDResponse) {}
+}

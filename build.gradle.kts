@@ -9,7 +9,9 @@ val jsonpath_version = "2.4.0"
 val kxs_version = "1.0.0"
 val arrow_version = "0.11.0"
 val proto_version = "3.14.0"
+val protokt_version = "0.5.4"
 val grpc_version = "1.0.0"
+val grpcnetty_version = "1.34.1"
 val kotest_version = "4.3.1"
 
 plugins {
@@ -26,17 +28,11 @@ plugins {
 group = "msw.server"
 version = "0.0.1"
 
-application {
-    mainClass.set("io.ktor.server.tomcat.EngineMain")
-}
-
 repositories {
     jcenter()
     mavenLocal()
     mavenCentral()
-    maven("https://jitpack.io")
     maven("https://kotlin.bintray.com/ktor")
-    maven("https://dl.bintray.com/arrow-kt/arrow-kt/")
 }
 
 dependencies {
@@ -44,12 +40,15 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version")
 
     // grpc
+    implementation("com.toasttab.protokt:protokt-runtime-grpc:$protokt_version")
     implementation("com.google.protobuf:protobuf-java:$proto_version")
     implementation("io.grpc:grpc-kotlin-stub:$grpc_version")
+    runtimeOnly("io.grpc:grpc-netty-shaded:$grpcnetty_version")
 
     // ktor
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-apache:$ktor_version")
+    implementation("ch.qos.logback:logback-classic:$logback_version")
 
     // additionals
     implementation("com.google.guava:guava:$guava_version")
@@ -60,7 +59,6 @@ dependencies {
     // testing
     testImplementation("io.kotest:kotest-runner-junit5:$kotest_version")
     testImplementation("io.kotest:kotest-assertions-core:$kotest_version")
-    testImplementation("io.kotest:kotest-assertions-arrow:$kotest_version")
     testImplementation("io.kotest:kotest-property:$kotest_version")
     testImplementation("io.kotest:kotest-extensions-allure:$kotest_version")
     testImplementation("io.kotest:kotest-plugins-pitest:$kotest_version")
@@ -68,14 +66,6 @@ dependencies {
 
 protokt {
     generateGrpc = true
-}
-
-sourceSets {
-    main {
-        proto {
-            srcDir("src")
-        }
-    }
 }
 
 tasks.withType<JavaCompile>().all {

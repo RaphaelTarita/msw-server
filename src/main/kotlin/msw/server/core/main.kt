@@ -1,31 +1,89 @@
 package msw.server.core
 
-import kotlinx.coroutines.delay
+import io.grpc.ServerBuilder
+import io.grpc.Status
+import io.grpc.StatusRuntimeException
 import msw.server.core.common.Directory
+import msw.server.core.common.ErrorTransformer
 import msw.server.core.model.ServerDirectory
+import msw.server.core.model.props.ServerProperties
 import msw.server.core.watcher.ServerWatcher
+import msw.server.rpc.instancecontrol.InstanceControlService
+import msw.server.rpc.instances.InstancesService
+import msw.server.rpc.presets.PresetsService
+import java.io.FileNotFoundException
 
-suspend fun main() {
+fun main() {
     val directory = ServerDirectory(Directory("C:\\Users\\rapha\\Desktop\\minecraft_server"))
 
     val watcher = ServerWatcher(directory)
-    watcher.launchInstance(
-        25565,
-        "uummannaq",
-        "1.16.3",
-        "default",
-        guiEnabled = true
+
+    directory.addPreset("deleteTest", ServerProperties(), true)
+
+    val transformer = ErrorTransformer.typedRulesetWithLambdaFallback(
+        {
+            StatusRuntimeException(
+                Status.UNKNOWN
+                    .withDescription("Unhandled Exception occurred ($it)")
+                    .withCause(it)
+            )
+        },
+        IllegalArgumentException::class to {
+            StatusRuntimeException(
+                Status.INVALID_ARGUMENT
+                    .withDescription("Bad Request: Call had malformed arguments (${it.message})")
+                    .withCause(it)
+            )
+        },
+        IllegalStateException::class to {
+            StatusRuntimeException(
+                Status.FAILED_PRECONDITION
+                    .withDescription("Precondition Failure: System was in wrong state for your call (${it.message})")
+                    .withCause(it)
+            )
+        },
+        IndexOutOfBoundsException::class to {
+            StatusRuntimeException(
+                Status.OUT_OF_RANGE
+                    .withDescription("Bad Request: Call requested access to an element with out-of-range index (${it.message})")
+                    .withCause(it)
+            )
+        },
+        NoSuchElementException::class to {
+            StatusRuntimeException(
+                Status.NOT_FOUND
+                    .withDescription("Resource not found: Call-requested resource was not inside target collection (${it.message})")
+                    .withCause(it)
+            )
+        },
+        NoSuchFileException::class to {
+            StatusRuntimeException(
+                Status.NOT_FOUND
+                    .withDescription("Resource not found: (k.io) File System location specified by call does not exist (${it.message})")
+                    .withCause(it)
+            )
+        },
+        java.nio.file.NoSuchFileException::class to {
+            StatusRuntimeException(
+            Status.NOT_FOUND
+                .withDescription("Resource not found: (j.nio) File System location specified by call does not exist (${it.message})")
+                .withCause(it)
+            )
+        },
+        FileAlreadyExistsException::class to {
+            StatusRuntimeException(
+                Status.ALREADY_EXISTS
+                    .withDescription("Resource already exists: Call requested to create an already-existing resource (${it.message})")
+                    .withCause(it)
+            )
+        }
     )
 
-    watcher.launchInstance(
-        25564,
-        "ultrasurvival",
-        "1.16.3",
-        "restricted",
-        guiEnabled = true
-    )
-
-    delay(20_000)
-    watcher.sendCommand(25565, "say I am the Instance that runs on port 25565, with world 'uummannaq'")
-    watcher.sendCommand(25564, "say I am the instance that runs on port 25564, with world 'ultrasurvival'")
+    ServerBuilder.forPort(50051)
+        .addService(InstanceControlService(watcher, transformer))
+        .addService(InstancesService(watcher, transformer))
+        .addService(PresetsService(directory, transformer))
+        .build()
+        .start()
+        .awaitTermination()
 }

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package msw.server.core.watcher;
+
+import "msw/server/core/watcher/MemoryAmount.proto";
+
+message InstanceConfiguration {
+  string versionID = 1;
+  string presetID = 2;
+  MemoryAmount heapInit = 3;
+  MemoryAmount heapMax = 4;
+  bool guiEnabled = 5;
+}

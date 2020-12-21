@@ -35,3 +35,5 @@ You are always free to fork this repository and extend or edit it in any way you
 ## 3. Becoming a contributor
 
 Currently, the project is openly accessible but has only one contributor with full editing access to the repository. If you would like to get involved in the project, contact me via E-Mail (raphael.tarita@gmail.com) or via Discord (Raph0007#3276). I'd be happy to welcome people from the community in the development team!
+
+NEW: You can now contact the development team via [GitHub Discussions](https://github.com/RaphaelTarita/msw-server/discussions). This feature has been published by GitHub in a Beta state.

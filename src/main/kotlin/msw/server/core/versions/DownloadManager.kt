@@ -6,7 +6,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -19,6 +19,7 @@ import java.security.MessageDigest
 import kotlin.math.min
 
 class DownloadManager(
+    private val scope: CoroutineScope,
     private val bufferSize: Int = 4096
 ) {
     companion object {
@@ -28,6 +29,12 @@ class DownloadManager(
     }
 
     private val client = HttpClient(Apache)
+
+    private fun List<suspend (Long, Long) -> Unit>.notifyProgress(current: Long, total: Long) {
+        for (listener in this) {
+            scope.launch { listener(current, total) }
+        }
+    }
 
     private fun checkSize(manifest: DownloadManifest) {
         val actualSize = runBlocking {
@@ -81,16 +88,24 @@ class DownloadManager(
         return channel
     }
 
-    fun download(manifest: DownloadManifest, target: Path) {
+    fun download(
+        manifest: DownloadManifest,
+        target: Path,
+        listeners: List<suspend (Long, Long) -> Unit> = emptyList(),
+        updateRate: Long = 100
+    ) {
         checkSize(manifest)
         val writer = Files.newOutputStream(target, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-        val progress = progress(target)
+        var progress = progress(target)
         if (progress >= manifest.size) return
         val md = MessageDigest.getInstance("SHA-1")
         val channel = runBlocking {
             if (progress > 0L) resumeDownload(manifest, progress, md) else initDownload(manifest)
         }
+        listeners.notifyProgress(progress, manifest.size)
+        val internalUpdateRate = (manifest.size / bufferSize) / updateRate
 
+        var count = 0L
         var hashJob: Job? = null
         val buf = ByteArray(bufferSize)
         do {
@@ -98,12 +113,17 @@ class DownloadManager(
             if (available > 0) {
                 val significant = buf.sliceArray(0 until available)
                 runBlocking { hashJob?.join() }
-                hashJob = GlobalScope.launch { md.update(significant) }
+                hashJob = scope.launch { md.update(significant) }
                 writer.write(significant)
+                progress += available
+                if (count++ % internalUpdateRate == 0L) {
+                    listeners.notifyProgress(progress, manifest.size)
+                }
             }
         } while (available >= 0)
         writer.close()
         checkHash(md, manifest, target)
         checkEndSize(manifest, target)
+        listeners.notifyProgress(manifest.size, manifest.size)
     }
 }

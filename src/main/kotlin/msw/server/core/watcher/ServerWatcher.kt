@@ -1,6 +1,7 @@
 package msw.server.core.watcher
 
 import com.google.common.collect.HashBiMap
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import msw.server.core.common.addTerminationCallback
@@ -12,7 +13,10 @@ import msw.server.core.model.World
 import msw.server.rpc.instances.Instance
 import msw.server.rpc.instances.InstanceList
 
-class ServerWatcher(private val directory: ServerDirectory) {
+class ServerWatcher(
+    private val directory: ServerDirectory,
+    private val scope: CoroutineScope
+) {
     companion object {
         const val ERR_NO_INSTANCE_ON_PORT = "no tracked instance is running on port "
         const val ERR_NO_INSTANCE_ON_WORLD = "no tracked instance is running on world "
@@ -55,7 +59,7 @@ class ServerWatcher(private val directory: ServerDirectory) {
                 instances[port] = directory
                     .root
                     .runCommand(command)
-                    .addTerminationCallback {
+                    .addTerminationCallback(scope) {
                         portMappings.remove(port)
                         instances.remove(port)
                     } to config

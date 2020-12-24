@@ -3,21 +3,29 @@ package msw.server.core
 import io.grpc.ServerBuilder
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.newSingleThreadContext
 import msw.server.core.common.Directory
 import msw.server.core.common.ErrorTransformer
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.props.ServerProperties
+import msw.server.core.versions.DownloadException
 import msw.server.core.watcher.ServerWatcher
 import msw.server.rpc.instancecontrol.InstanceControlService
 import msw.server.rpc.instances.InstancesService
 import msw.server.rpc.presets.PresetsService
-import java.io.FileNotFoundException
+import msw.server.rpc.versions.VersionsService
+import kotlin.coroutines.EmptyCoroutineContext
 
+@OptIn(ExperimentalCoroutinesApi::class)
 fun main() {
-    val directory = ServerDirectory(Directory("C:\\Users\\rapha\\Desktop\\minecraft_server"))
+    val toplevelDispatcher = newSingleThreadContext("toplevel")
+    val toplevelScope = CoroutineScope(toplevelDispatcher)
+    val netScope = CoroutineScope(EmptyCoroutineContext)
 
-    val watcher = ServerWatcher(directory)
-
+    val directory = ServerDirectory(Directory("C:\\Users\\rapha\\Desktop\\minecraft_server"), toplevelScope, netScope)
+    val watcher = ServerWatcher(directory, toplevelScope)
     directory.addPreset("deleteTest", ServerProperties(), true)
 
     val transformer = ErrorTransformer.typedRulesetWithLambdaFallback(
@@ -65,15 +73,22 @@ fun main() {
         },
         java.nio.file.NoSuchFileException::class to {
             StatusRuntimeException(
-            Status.NOT_FOUND
-                .withDescription("Resource not found: (j.nio) File System location specified by call does not exist (${it.message})")
-                .withCause(it)
+                Status.NOT_FOUND
+                    .withDescription("Resource not found: (j.nio) File System location specified by call does not exist (${it.message})")
+                    .withCause(it)
             )
         },
         FileAlreadyExistsException::class to {
             StatusRuntimeException(
                 Status.ALREADY_EXISTS
                     .withDescription("Resource already exists: Call requested to create an already-existing resource (${it.message})")
+                    .withCause(it)
+            )
+        },
+        DownloadException::class to {
+            StatusRuntimeException(
+                Status.FAILED_PRECONDITION
+                    .withDescription("Precondition Failure: Download failed (${it.message})")
                     .withCause(it)
             )
         }
@@ -83,7 +98,10 @@ fun main() {
         .addService(InstanceControlService(watcher, transformer))
         .addService(InstancesService(watcher, transformer))
         .addService(PresetsService(directory, transformer))
+        .addService(VersionsService(directory, transformer))
         .build()
         .start()
         .awaitTermination()
+
+    toplevelDispatcher.close()
 }

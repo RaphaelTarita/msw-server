@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package msw.server.rpc.versions;
+
+message RecommendedVersion {
+  bool installed = 1;
+  string recommendedID = 2;
+  repeated string all = 3;
+}

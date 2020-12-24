@@ -4,22 +4,23 @@ import com.toasttab.protokt.Empty
 import io.grpc.ServerServiceDefinition
 import io.grpc.StatusRuntimeException
 import io.grpc.kotlin.AbstractCoroutineServerImpl
-import io.grpc.kotlin.ServerCalls.unaryServerMethodDefinition
 import msw.server.core.common.ErrorTransformer
+import msw.server.core.common.Port
+import msw.server.core.common.ServerResponse
+import msw.server.core.common.unary
 import msw.server.core.watcher.InstanceConfiguration
-import msw.server.core.watcher.Port
-import msw.server.core.watcher.ServerResponse
 import msw.server.core.watcher.ServerWatcher
 
 class InstancesService(
     private val watcher: ServerWatcher,
     private val transformer: ErrorTransformer<StatusRuntimeException>
 ) : AbstractCoroutineServerImpl() {
-    override fun bindService(): ServerServiceDefinition = ServerServiceDefinition.builder(InstancesGrpc.serviceDescriptor)
-        .addMethod(unaryServerMethodDefinition(context, InstancesGrpc.getRunningInstancesMethod, transformer.pack1suspend(::getRunningInstances)))
-        .addMethod(unaryServerMethodDefinition(context, InstancesGrpc.startInstanceMethod, transformer.pack1suspend(::startInstance)))
-        .addMethod(unaryServerMethodDefinition(context, InstancesGrpc.stopInstanceMethod, transformer.pack1suspend(::stopInstance)))
-        .build()
+    override fun bindService(): ServerServiceDefinition =
+        ServerServiceDefinition.builder(InstancesGrpc.serviceDescriptor)
+            .addMethod(unary(context, InstancesGrpc.getRunningInstancesMethod, transformer.pack1suspend(::getRunningInstances)))
+            .addMethod(unary(context, InstancesGrpc.startInstanceMethod, transformer.pack1suspend(::startInstance)))
+            .addMethod(unary(context, InstancesGrpc.stopInstanceMethod, transformer.pack1suspend(::stopInstance)))
+            .build()
 
     private fun getRunningInstances(empty: Empty): InstanceList {
         return watcher.getInstances()

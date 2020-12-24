@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package msw.server.rpc.versions;
+
+enum VersionLabel {
+  ALPHA = 0;
+  BETA = 1;
+  RELEASE = 2;
+  SNAPSHOT = 3;
+}

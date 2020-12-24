@@ -16,8 +16,9 @@ import java.net.URL
 import java.time.OffsetDateTime
 
 class ManifestCreator(
+    private val scope: CoroutineScope,
     private val initUrl: URL = URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"),
-    cacheRefresh: Long = 60_000L
+    cacheRefresh: Long = 12 * 60 * 60 * 1000
 ) {
     companion object {
         private const val SPAM_PROTECTION_MILLIS = 10L
@@ -43,7 +44,7 @@ class ManifestCreator(
             connectTimeout = 20_000
         }
     }
-    private val contents = GlobalScope.async { readContent() }
+    private val contents = scope.async { readContent() }
     private val cache = ExpirableCache<URL, DownloadManifest>(cacheRefresh)
 
     private fun constructErrorMsg(
@@ -127,7 +128,7 @@ class ManifestCreator(
             .filter { it.releaseTime in releaseTimeRange }
             .toList()
             .map {
-                GlobalScope.async {
+                scope.async {
                     findUrlInDocument(
                         it.url,
                         it.id,
@@ -183,4 +184,6 @@ class ManifestCreator(
         val parsed = parse(contents)
         return internalCreate(parsed, parsed.latest.snapshot, VersionType.SNAPSHOT).single()
     }
+
+    fun rootDocument() = parse(contents)
 }

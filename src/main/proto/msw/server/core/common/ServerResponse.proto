@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package msw.server.core.watcher;
+package msw.server.core.common;
 
 message ServerResponse {
   bool successful = 1;

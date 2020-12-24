@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package msw.server.rpc.versions;
+
+import "msw/server/core/common/ServerResponse.proto";
+
+message Progress {
+  oneof status {
+    double relativeProgress = 1;
+    msw.server.core.common.ServerResponse response = 2;
+  }
+}

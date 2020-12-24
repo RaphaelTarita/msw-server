@@ -3,13 +3,13 @@ syntax = "proto3";
 package msw.server.rpc.instances;
 
 import "google/protobuf/empty.proto";
-import "msw/server/core/watcher/ServerResponse.proto";
-import "msw/server/core/watcher/Port.proto";
+import "msw/server/core/common/ServerResponse.proto";
+import "msw/server/core/common/Port.proto";
 import "msw/server/rpc/instances/InstanceList.proto";
 import "msw/server/rpc/instances/StartInstanceRequest.proto";
 
 service Instances {
-  rpc GetRunningInstances(google.protobuf.Empty) returns (InstanceList) {}
-  rpc StartInstance(StartInstanceRequest) returns (msw.server.core.watcher.ServerResponse) {}
-  rpc StopInstance(msw.server.core.watcher.Port) returns (msw.server.core.watcher.ServerResponse) {}
+  rpc GetRunningInstances(google.protobuf.Empty) returns (InstanceList);
+  rpc StartInstance(StartInstanceRequest) returns (msw.server.core.common.ServerResponse);
+  rpc StopInstance(msw.server.core.common.Port) returns (msw.server.core.common.ServerResponse);
 }

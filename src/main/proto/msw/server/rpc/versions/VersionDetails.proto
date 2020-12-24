@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package msw.server.rpc.versions;
+
+import "google/protobuf/timestamp.proto";
+import "msw/server/rpc/versions/VersionLabel.proto";
+
+message VersionDetails {
+  string versionID = 1;
+  VersionLabel label = 2;
+  google.protobuf.Timestamp time = 3;
+  google.protobuf.Timestamp releaseTime = 4;
+  int64 size = 5;
+  string sha1 = 6;
+}

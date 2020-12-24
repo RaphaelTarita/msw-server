@@ -19,7 +19,7 @@ class World(val root: Directory) {
     }
 
     val name: String = root.name // TODO: Acquire from levelData, using lazy delegation
-    val advancements = Directory(root, "advancements")
+    val advancements = Directory(root, "advancements", create = true)
     val data = Directory(root, "data")
     val datapacks = Directory(root, "datapacks", require = false)
     val dimMinus1 = Directory(root, "DIM-1")
@@ -29,7 +29,7 @@ class World(val root: Directory) {
     val players = Directory(root, "players", require = false)
     val poi = Directory(root, "poi", require = false)
     val region = Directory(root, "region")
-    val stats = collectStats(Directory(root, "stats"))
+    val stats = collectStats(Directory(root, "stats", create = true))
     val levelData = composePath(root, "level.dat")
     val levelDataOld = composePath(root, "level.dat")
     val ressources = composePath(root, "resources.zip")

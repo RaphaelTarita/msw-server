@@ -1,11 +1,23 @@
 package msw.server.core.common
 
+import com.toasttab.protokt.Timestamp
+import io.grpc.MethodDescriptor
+import io.grpc.kotlin.AbstractCoroutineServerImpl
+import io.grpc.kotlin.ServerCalls
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ClosedSendChannelException
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.StringFormat
+import msw.server.core.versions.DownloadManifest
+import msw.server.core.versions.model.VersionType
+import msw.server.core.versions.model.Versions
 import msw.server.core.watcher.MemoryAmount
 import msw.server.core.watcher.MemoryUnit
+import msw.server.rpc.versions.VersionDetails
+import msw.server.rpc.versions.VersionLabel
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -14,12 +26,26 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.MessageDigest
+import java.time.OffsetDateTime
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.min
 
 val HEX = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
 
 fun Long.coerceToInt(): Int {
     return min(this, Int.MAX_VALUE.toLong()).toInt()
+}
+
+fun sign(i: Int): Int {
+    return if (i > 0) 1 else if (i < 0) -1 else 0
+}
+
+fun sign(l: Long): Int {
+    return if (l > 0) 1 else if (l < 0) -1 else 0
+}
+
+fun invertInsertionPoint(inverted: Int): Int {
+    return -(inverted + 1)
 }
 
 fun String.isNumeric(): Boolean {
@@ -83,7 +109,12 @@ fun Path.sha1(bufferSize: Int = 4096): String {
 fun File.sha1(bufferSize: Int = 4096) = toPath().sha1(bufferSize)
 
 @OptIn(ExperimentalSerializationApi::class)
-fun semanticEquivalence(lop: String, rop: String, format: StringFormat, semantics: DeserializationStrategy<*>): Boolean {
+fun semanticEquivalence(
+    lop: String,
+    rop: String,
+    format: StringFormat,
+    semantics: DeserializationStrategy<*>
+): Boolean {
     return format.decodeFromString(semantics, lop) == format.decodeFromString(semantics, rop)
 }
 
@@ -199,6 +230,18 @@ fun <K, V, R> Map<K, V>.ifContainsValue(value: V, action: (Pair<K, V>) -> R): Li
     }
 }
 
+fun <K, V> Iterable<Pair<K, V>>.toMap(onDuplicates: (Pair<K, V>) -> Unit): Map<K, V> {
+    val res = LinkedHashMap<K, V>()
+    for ((k, v) in this) {
+        if (res.containsKey(k)) {
+            onDuplicates(k to v)
+        } else {
+            res[k] = v
+        }
+    }
+    return res
+}
+
 fun ByteArray.toHexString(): String {
     val hexChars = CharArray(size * 2)
     for (i in indices) {
@@ -215,6 +258,70 @@ fun Any?.toByteArray(): ByteArray {
     val baos = ByteArrayOutputStream()
     ObjectOutputStream(baos).apply { writeObject(this@toByteArray) }.close()
     return baos.toByteArray()
+}
+
+fun DownloadManifest.toVersionDetails() = VersionDetails {
+    versionID = this@toVersionDetails.versionID
+    label = this@toVersionDetails.type.toVersionLabel()
+    time = this@toVersionDetails.time.toTimestamp()
+    releaseTime = this@toVersionDetails.releaseTime.toTimestamp()
+    size = this@toVersionDetails.size
+    sha1 = this@toVersionDetails.sha1
+}
+
+fun VersionType.toVersionLabel(): VersionLabel {
+    return when (this) {
+        VersionType.OLD_ALPHA -> VersionLabel.ALPHA
+        VersionType.OLD_BETA -> VersionLabel.BETA
+        VersionType.RELEASE -> VersionLabel.RELEASE
+        VersionType.SNAPSHOT -> VersionLabel.SNAPSHOT
+        VersionType.ALL -> throw IllegalStateException("VersionType was '$this', which is an illegal value (only used for filtering)")
+    }
+}
+
+fun OffsetDateTime.toTimestamp() = Timestamp {
+    seconds = this@toTimestamp.toEpochSecond()
+    nanos = this@toTimestamp.nano
+}
+
+fun <T, U> comparatorForNested(innerComparator: Comparator<U>, selector: (T) -> U): Comparator<T> {
+    return Comparator { o1, o2 ->
+        when (val ncomp = compareNullable(o1, o2)) {
+            is NullableCompare.RESULT -> ncomp.res
+            is NullableCompare.CONTINUE -> innerComparator.compare(selector(ncomp.o1), selector(ncomp.o2))
+        }
+    }
+}
+
+fun versionComparatorFor(rootDocument: Versions): Comparator<String> {
+    val ordered = rootDocument.versions.sortedWith(comparatorForNested(OffsetDateTime.timeLineOrder()) { it.releaseTime })
+    return Comparator { o1, o2 ->
+        when (val ncomp = compareNullable(if (o1.isEmpty()) null else o1, if (o2.isEmpty()) null else o2)) {
+            is NullableCompare.RESULT -> ncomp.res
+            is NullableCompare.CONTINUE -> {
+                val i1 = ordered.indexOfFirst { it.id == o1 }
+                val i2 = ordered.indexOfFirst { it.id == o2 }
+                require(i1 != -1) { "Unknown version id '$o1'" }
+                require(i2 != -1) { "Unknown version id '$o2'" }
+                i1 - i2
+            }
+        }
+    }
+}
+
+fun <T> compareNullable(n1: T?, n2: T?): NullableCompare<T> {
+    return if (n1 == null) {
+        if (n2 == null) NullableCompare.RESULT(0)
+        else NullableCompare.RESULT(-1)
+    } else {
+        if (n2 == null) NullableCompare.RESULT(1)
+        else NullableCompare.CONTINUE(n1, n2)
+    }
+}
+
+sealed class NullableCompare<T> {
+    data class RESULT<T>(val res: Int) : NullableCompare<T>()
+    data class CONTINUE<T>(val o1: T, val o2: T) : NullableCompare<T>()
 }
 
 fun Directory.runCommand(command: List<String>): Process {
@@ -265,6 +372,21 @@ fun Process.addTerminationCallback(scope: CoroutineScope = GlobalScope, callback
     return this
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
+suspend fun <T> SendChannel<T>.trySend(elem: T): Boolean {
+    return if (isClosedForSend) {
+        false
+    } else {
+        try {
+            send(elem)
+            true
+        } catch (exc: ClosedSendChannelException) {
+            false
+        }
+    }
+}
+
+
 fun String.indexOf(regex: Regex, startIndex: Int = 0, notFound: Int = 0): Int {
     return regex.find(this.substring(startIndex))?.range?.start ?: notFound
 }
@@ -310,6 +432,30 @@ fun MemoryAmount.toCommandString(): String {
         }
     }"
 }
+
+fun <T, U> AbstractCoroutineServerImpl.unary(
+    context: CoroutineContext,
+    descriptor: MethodDescriptor<T, U>,
+    implementation: suspend (request: T) -> U
+) = ServerCalls.unaryServerMethodDefinition(context, descriptor, implementation)
+
+fun <T, U> AbstractCoroutineServerImpl.clientStream(
+    context: CoroutineContext,
+    descriptor: MethodDescriptor<T, U>,
+    implementation: suspend (requests: Flow<T>) -> U
+) = ServerCalls.clientStreamingServerMethodDefinition(context, descriptor, implementation)
+
+fun <T, U> AbstractCoroutineServerImpl.serverStream(
+    context: CoroutineContext,
+    descriptor: MethodDescriptor<T, U>,
+    implementation: (request: T) -> Flow<U>
+) = ServerCalls.serverStreamingServerMethodDefinition(context, descriptor, implementation)
+
+fun <T, U> AbstractCoroutineServerImpl.bidiStream(
+    context: CoroutineContext,
+    descriptor: MethodDescriptor<T, U>,
+    implementation: (requests: Flow<T>) -> Flow<U>
+) = ServerCalls.bidiStreamingServerMethodDefinition(context, descriptor, implementation)
 
 
 

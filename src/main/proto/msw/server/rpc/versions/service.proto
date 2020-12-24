@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package msw.server.rpc.versions;
+
+import "google/protobuf/empty.proto";
+import "msw/server/core/common/ServerResponse.proto";
+import "msw/server/rpc/versions/VersionIDList.proto";
+import "msw/server/rpc/versions/VersionID.proto";
+import "msw/server/rpc/versions/VersionDetails.proto";
+import "msw/server/rpc/versions/RecommendedVersion.proto";
+import "msw/server/rpc/versions/Progress.proto";
+
+service Versions {
+  rpc ListInstalledVersions(google.protobuf.Empty) returns (VersionIDList);
+  rpc ListAvailableVersions(google.protobuf.Empty) returns (VersionIDList);
+  rpc GetVersionDetails(VersionID) returns (VersionDetails);
+  rpc RecommendedVersionAbove(VersionID) returns (RecommendedVersion);
+  rpc RecommendedVersionBelow(VersionID) returns (RecommendedVersion);
+  rpc InstallVersion(VersionID) returns (stream Progress);
+  rpc UninstallVersion(VersionID) returns (msw.server.core.common.ServerResponse);
+}

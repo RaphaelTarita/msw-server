@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package msw.server.rpc.versions;
+
+message VersionIDList {
+  repeated string ids = 1;
+}

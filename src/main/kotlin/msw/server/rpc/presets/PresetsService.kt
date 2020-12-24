@@ -3,11 +3,11 @@ package msw.server.rpc.presets
 import io.grpc.ServerServiceDefinition
 import io.grpc.StatusRuntimeException
 import io.grpc.kotlin.AbstractCoroutineServerImpl
-import io.grpc.kotlin.ServerCalls.unaryServerMethodDefinition
 import kotlinx.serialization.ExperimentalSerializationApi
 import msw.server.core.common.ErrorTransformer
 import msw.server.core.common.StringProperties
 import msw.server.core.common.semanticEquivalence
+import msw.server.core.common.unary
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.props.ServerProperties
 
@@ -16,10 +16,10 @@ class PresetsService(
     private val transformer: ErrorTransformer<StatusRuntimeException>
 ) : AbstractCoroutineServerImpl() {
     override fun bindService(): ServerServiceDefinition = ServerServiceDefinition.builder(PresetsGrpc.serviceDescriptor)
-        .addMethod(unaryServerMethodDefinition(context, PresetsGrpc.getPresetIDsMethod, transformer.pack1suspend(::getPresetIDs)))
-        .addMethod(unaryServerMethodDefinition(context, PresetsGrpc.getPresetMethod, transformer.pack1suspend(::getPreset)))
-        .addMethod(unaryServerMethodDefinition(context, PresetsGrpc.setPresetMethod, transformer.pack1suspend(::setPreset)))
-        .addMethod(unaryServerMethodDefinition(context, PresetsGrpc.deletePresetMethod, transformer.pack1suspend(::deletePreset)))
+        .addMethod(unary(context, PresetsGrpc.getPresetIDsMethod, transformer.pack1suspend(::getPresetIDs)))
+        .addMethod(unary(context, PresetsGrpc.getPresetMethod, transformer.pack1suspend(::getPreset)))
+        .addMethod(unary(context, PresetsGrpc.setPresetMethod, transformer.pack1suspend(::setPreset)))
+        .addMethod(unary(context, PresetsGrpc.deletePresetMethod, transformer.pack1suspend(::deletePreset)))
         .build()
 
     private fun getPresetIDs(optionalRegex: PresetIDRegex): PresetIDList {
@@ -48,7 +48,13 @@ class PresetsService(
                 }
             } else {
                 val prev = directory.presetByID(idPreset.id)
-                if (semanticEquivalence(prev, idPreset.props, StringProperties.Default, ServerProperties.serializer())) {
+                if (semanticEquivalence(
+                        prev,
+                        idPreset.props,
+                        StringProperties.Default,
+                        ServerProperties.serializer()
+                    )
+                ) {
                     PresetCRUDResponse {
                         code = ResponseCode.UNCHANGED
                         message = "Preset with ID ${idPreset.id} was unchanged (semantic match)"

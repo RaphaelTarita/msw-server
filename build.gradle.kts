@@ -16,9 +16,9 @@ val kotest_version = "4.3.1"
 
 plugins {
     application
-    kotlin("jvm") version "1.4.20"
-    kotlin("plugin.serialization") version "1.4.20"
-    kotlin("kapt") version "1.4.20"
+    kotlin("jvm") version "1.4.30"
+    kotlin("plugin.serialization") version "1.4.30"
+    kotlin("kapt") version "1.4.30"
     id("io.qameta.allure") version "2.8.1"
     id("info.solidsoft.pitest") version "1.5.1"
     id("com.toasttab.protokt") version "0.5.4"

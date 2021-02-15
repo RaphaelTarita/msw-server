@@ -1,6 +1,8 @@
 # msw-server
-Minecraft Server Watcher - Server Application
 
+![MSW Server Banner Logo](banner/msw-server-light-large.png "MSW Server")
+
+### Minecraft Server Watcher - Server Application
 The contents of this repository represent the sources to build the server part of Minecraft Server Watcher - a free-to-use application to monitor Minecraft servers remotely. The entire application consists of the server part and the client part. This repository contains the server code (WIP: Note that the client part is **not yet** available as a public GitHub repository, but this will change in the future. It will then be linked here).
 
 ## Stack

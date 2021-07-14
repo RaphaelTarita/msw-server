@@ -4,24 +4,25 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
-val guava_version = "29.0-jre"
-val jsonpath_version = "2.4.0"
-val kxs_version = "1.0.0"
-val arrow_version = "0.11.0"
-val proto_version = "3.14.0"
-val protokt_version = "0.5.4"
-val grpc_version = "1.0.0"
-val grpcnetty_version = "1.34.1"
-val kotest_version = "4.3.1"
+val guava_version = "30.1.1-jre"
+val jsonpath_version = "2.6.0"
+val kxs_version = "1.2.2"
+val arrow_version = "0.13.2"
+val proto_version = "3.15.3"
+val protokt_version = "0.6.2"
+val grpc_version = "1.1.0"
+val grpcnetty_version = "1.39.0"
+val kotest_version = "4.6.1"
+val kotest_extensions_version = "1.0.1"
 
 plugins {
     application
-    kotlin("jvm") version "1.4.30"
-    kotlin("plugin.serialization") version "1.4.30"
-    kotlin("kapt") version "1.4.30"
+    kotlin("jvm") version "1.5.21"
+    kotlin("plugin.serialization") version "1.5.21"
+    kotlin("kapt") version "1.5.21"
     id("io.qameta.allure") version "2.8.1"
-    id("info.solidsoft.pitest") version "1.5.1"
-    id("com.toasttab.protokt") version "0.5.4"
+    id("info.solidsoft.pitest") version "1.6.0"
+    id("com.toasttab.protokt") version "0.6.2"
     id("idea")
 }
 
@@ -29,16 +30,10 @@ group = "msw.server"
 version = "0.0.1"
 
 repositories {
-    jcenter()
-    mavenLocal()
     mavenCentral()
-    maven("https://kotlin.bintray.com/ktor")
 }
 
 dependencies {
-    // stdlib
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version")
-
     // grpc
     implementation("com.toasttab.protokt:protokt-runtime-grpc:$protokt_version")
     implementation("com.google.protobuf:protobuf-java:$proto_version")
@@ -60,8 +55,8 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:$kotest_version")
     testImplementation("io.kotest:kotest-assertions-core:$kotest_version")
     testImplementation("io.kotest:kotest-property:$kotest_version")
-    testImplementation("io.kotest:kotest-extensions-allure:$kotest_version")
-    testImplementation("io.kotest:kotest-plugins-pitest:$kotest_version")
+    testImplementation("io.kotest.extensions:kotest-extensions-allure:$kotest_extensions_version")
+    testImplementation("io.kotest.extensions:kotest-extensions-pitest:$kotest_extensions_version")
 }
 
 protokt {
@@ -73,13 +68,13 @@ tasks.withType<JavaCompile>().all {
 }
 
 tasks.withType<KotlinCompile>().all {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8.toString()
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
     kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 // test scripting
@@ -89,7 +84,7 @@ tasks.withType<Test> {
 
 allure {
     autoconfigure = false
-    version = "2.13.6"
+    version = "2.14.0"
 }
 
 configure<PitestPluginExtension> {

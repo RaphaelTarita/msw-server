@@ -48,36 +48,45 @@ sealed class StringProperties(internal val config: PropertiesConf) :
         }
     }
 
+    private fun keyEnd(line: String): Int {
+        var skipNext = false
+        var end = line.length
+        for (i in line.indices) {
+            if (skipNext) continue
+            if (line[i] == '\\') skipNext = true
+            if (line[i] in separators) {
+                end = i
+                break
+            }
+        }
+        return end
+    }
+
+    private fun valueBegin(line: String, startIndex: Int): Int {
+        var begin = line.length
+        var separatorFound = false
+        for (i in startIndex..line.lastIndex) {
+            if (separatorFound && line[i] != ' ') {
+                begin = i
+                break
+            }
+            if (line[i] in nonBlankSeparators) {
+                separatorFound = true
+            }
+            if (line[i] !in separators) {
+                begin = i
+                break
+            }
+        }
+        return begin
+    }
+
     @OptIn(InternalSerializationApi::class)
     override fun <T> decodeFromString(deserializer: DeserializationStrategy<T>, string: String): T {
         val result = mutableMapOf<String, String>()
         for (line in string.logicalLines()) {
-            var skipNext = false
-            var kend = line.length
-            for (i in line.indices) {
-                if (skipNext) continue
-                if (line[i] == '\\') skipNext = true
-                if (line[i] in separators) {
-                    kend = i
-                    break
-                }
-            }
-
-            var vbegin = line.length
-            var separatorFound = false
-            for (i in kend..line.lastIndex) {
-                if (separatorFound && line[i] != ' ') {
-                    vbegin = i
-                    break
-                }
-                if (line[i] in nonBlankSeparators) {
-                    separatorFound = true
-                }
-                if (line[i] !in separators) {
-                    vbegin = i
-                    break
-                }
-            }
+            val kend = keyEnd(line)
+            val vbegin = valueBegin(line, kend)
 
             result[line.substring(0, kend)] = line.substring(vbegin)
         }

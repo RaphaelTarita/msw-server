@@ -2,6 +2,7 @@
 /.idea
 /out
 /build
+/minecraft_server
 *.iml
 *.ipr
 *.iws

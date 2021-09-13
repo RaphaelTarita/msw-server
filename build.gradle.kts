@@ -8,21 +8,23 @@ val guava_version = "30.1.1-jre"
 val jsonpath_version = "2.6.0"
 val kxs_version = "1.2.2"
 val arrow_version = "0.13.2"
-val proto_version = "3.15.3"
-val protokt_version = "0.6.2"
+val proto_version = "3.17.3"
+val protokt_version = "0.6.4"
 val grpc_version = "1.1.0"
-val grpcnetty_version = "1.39.0"
-val kotest_version = "4.6.1"
-val kotest_extensions_version = "1.0.1"
+val grpcnetty_version = "1.40.1"
+val kotest_version = "5.0.0.M1"
+val kotest_allure_version = "1.0.2"
+val kotest_pitest_version = "1.0.1"
+val knbt_version = "0.9.1"
 
 plugins {
     application
-    kotlin("jvm") version "1.5.21"
-    kotlin("plugin.serialization") version "1.5.21"
-    kotlin("kapt") version "1.5.21"
+    kotlin("jvm") version "1.5.30"
+    kotlin("plugin.serialization") version "1.5.30"
+    kotlin("kapt") version "1.5.30"
     id("io.qameta.allure") version "2.8.1"
     id("info.solidsoft.pitest") version "1.6.0"
-    id("com.toasttab.protokt") version "0.6.2"
+    id("com.toasttab.protokt") version "0.6.4"
     id("idea")
 }
 
@@ -50,13 +52,14 @@ dependencies {
     implementation("com.jayway.jsonpath:json-path:$jsonpath_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kxs_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:$kxs_version")
+    implementation("net.benwoodworth.knbt:knbt:$knbt_version")
 
     // testing
     testImplementation("io.kotest:kotest-runner-junit5:$kotest_version")
     testImplementation("io.kotest:kotest-assertions-core:$kotest_version")
     testImplementation("io.kotest:kotest-property:$kotest_version")
-    testImplementation("io.kotest.extensions:kotest-extensions-allure:$kotest_extensions_version")
-    testImplementation("io.kotest.extensions:kotest-extensions-pitest:$kotest_extensions_version")
+    testImplementation("io.kotest.extensions:kotest-extensions-allure:$kotest_allure_version")
+    testImplementation("io.kotest.extensions:kotest-extensions-pitest:$kotest_pitest_version")
 }
 
 protokt {

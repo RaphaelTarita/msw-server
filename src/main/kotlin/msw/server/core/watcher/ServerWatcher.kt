@@ -9,7 +9,7 @@ import msw.server.core.common.mebibytes
 import msw.server.core.common.runCommand
 import msw.server.core.common.toCommandString
 import msw.server.core.model.ServerDirectory
-import msw.server.core.model.World
+import msw.server.core.model.world.World
 import msw.server.rpc.instances.Instance
 import msw.server.rpc.instances.InstanceList
 
@@ -56,8 +56,7 @@ class ServerWatcher(
 
             launchMutex.withLock {
                 directory.activatePreset(config.presetID)
-                instances[port] = directory
-                    .root
+                instances[port] = directory.root
                     .runCommand(command)
                     .addTerminationCallback(scope) {
                         portMappings.remove(port)

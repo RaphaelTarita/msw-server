@@ -91,7 +91,7 @@ class DownloadManager(
     fun download(
         manifest: DownloadManifest,
         target: Path,
-        listeners: List<suspend (Long, Long) -> Unit> = emptyList(),
+        listeners: List<suspend (current: Long, total: Long) -> Unit> = emptyList(),
         updateRate: Long = 100
     ) {
         checkSize(manifest)

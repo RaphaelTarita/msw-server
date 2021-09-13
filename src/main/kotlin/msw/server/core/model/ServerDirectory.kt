@@ -8,8 +8,8 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import msw.server.core.common.*
-import msw.server.core.model.*
 import msw.server.core.model.props.ServerProperties
+import msw.server.core.model.world.World
 import msw.server.core.versions.DownloadException
 import msw.server.core.versions.DownloadManager
 import msw.server.core.versions.DownloadManifest
@@ -150,7 +150,7 @@ class ServerDirectory(
         return StringProperties.decodeFromString(readFromPath(properties))
     }
 
-    fun addVersion(id: String, listeners: List<suspend (Long, Long) -> Unit> = emptyList()): Job {
+    fun addVersion(id: String, listeners: List<suspend (current: Long, total: Long) -> Unit> = emptyList()): Job {
         val manifest = manifestCreator.createManifest(id)
         val target = composePath(root, "minecraft_server.$id.jar")
         return toplevelScope.launch {
@@ -158,6 +158,8 @@ class ServerDirectory(
             mutableVersions[id] = manifest.toVersionDetails() to target
         }
     }
+
+    fun addVersion(id: String, listener: suspend (Long, Long) -> Unit): Job = addVersion(id, listOf(listener))
 
     fun removeVersion(id: String): Boolean {
         val version = serverVersions[id]

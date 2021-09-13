@@ -24,7 +24,11 @@ fun main() {
     val toplevelScope = CoroutineScope(toplevelDispatcher)
     val netScope = CoroutineScope(EmptyCoroutineContext)
 
-    val directory = ServerDirectory(Directory("C:\\Users\\rapha\\Desktop\\minecraft_server"), toplevelScope, netScope)
+    val directory = ServerDirectory(Directory("./minecraft_server", create = true), toplevelScope, netScope)
+
+    // TODO: https://github.com/BenWoodworth/knbt/issues/8
+    // println(directory.worlds.map { it.name })
+
     val watcher = ServerWatcher(directory, toplevelScope)
     directory.addPreset("deleteTest", ServerProperties(), true)
 

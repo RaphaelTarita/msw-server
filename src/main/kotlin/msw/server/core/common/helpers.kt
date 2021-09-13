@@ -4,10 +4,11 @@ import com.toasttab.protokt.Timestamp
 import io.grpc.MethodDescriptor
 import io.grpc.kotlin.AbstractCoroutineServerImpl
 import io.grpc.kotlin.ServerCalls
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.StringFormat
@@ -296,7 +297,7 @@ fun <T, U> comparatorForNested(innerComparator: Comparator<U>, selector: (T) -> 
 fun versionComparatorFor(rootDocument: Versions): Comparator<String> {
     val ordered = rootDocument.versions.sortedWith(comparatorForNested(OffsetDateTime.timeLineOrder()) { it.releaseTime })
     return Comparator { o1, o2 ->
-        when (val ncomp = compareNullable(if (o1.isEmpty()) null else o1, if (o2.isEmpty()) null else o2)) {
+        when (val ncomp = compareNullable(o1.ifEmpty { null }, o2.ifEmpty { null })) {
             is NullableCompare.RESULT -> ncomp.res
             is NullableCompare.CONTINUE -> {
                 val i1 = ordered.indexOfFirst { it.id == o1 }
@@ -357,7 +358,7 @@ fun String.commandParts(): List<String> {
     return res
 }
 
-fun Process.addTerminationCallback(scope: CoroutineScope = GlobalScope, callback: Process.() -> Unit): Process {
+fun Process.addTerminationCallback(scope: CoroutineScope, callback: Process.() -> Unit): Process {
     try {
         exitValue()
         callback()
@@ -371,21 +372,6 @@ fun Process.addTerminationCallback(scope: CoroutineScope = GlobalScope, callback
     }
     return this
 }
-
-@OptIn(ExperimentalCoroutinesApi::class)
-suspend fun <T> SendChannel<T>.trySend(elem: T): Boolean {
-    return if (isClosedForSend) {
-        false
-    } else {
-        try {
-            send(elem)
-            true
-        } catch (exc: ClosedSendChannelException) {
-            false
-        }
-    }
-}
-
 
 fun String.indexOf(regex: Regex, startIndex: Int = 0, notFound: Int = 0): Int {
     return regex.find(this.substring(startIndex))?.range?.start ?: notFound

@@ -134,7 +134,7 @@ class VersionsService(
 
         return flow {
             try {
-                val job = directory.addVersion(version.id, listOf(listener))
+                val job = directory.addVersion(version.id, listener)
                 while (!channel.isClosedForReceive) {
                     emit(channel.receive())
                 }

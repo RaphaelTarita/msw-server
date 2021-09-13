@@ -1,14 +1,28 @@
-package msw.server.core.model
+package msw.server.core.model.world
 
 import msw.server.core.common.Directory
 import msw.server.core.common.JSONFile
 import msw.server.core.common.composePath
+import msw.server.core.model.PlayerStats
+import net.benwoodworth.knbt.Nbt
+import net.benwoodworth.knbt.NbtCompression
+import net.benwoodworth.knbt.NbtVariant
+import net.benwoodworth.knbt.decodeFromStream
 import java.io.File
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import kotlin.io.path.inputStream
 
 // https://minecraft-de.gamepedia.com/Spielstand-Speicherung#Weltordner
 class World(val root: Directory) {
     companion object {
-        fun collectStats(dir: Directory): List<JSONFile<PlayerStats>> {
+        private val NBT = Nbt {
+            variant = NbtVariant.Java
+            compression = NbtCompression.Gzip
+            ignoreUnknownKeys = true
+        }
+
+        private fun collectStats(dir: Directory): List<JSONFile<PlayerStats>> {
             val children = dir.listFiles { file: File -> !file.isDirectory } ?: emptyArray()
             val res = mutableListOf<JSONFile<PlayerStats>>()
             for (f in children) {
@@ -16,9 +30,13 @@ class World(val root: Directory) {
             }
             return res
         }
+
+        private fun findName(levelData: Path): String {
+            return NBT.decodeFromStream<LevelRoot>(levelData.inputStream(StandardOpenOption.READ)).data.levelName
+        }
     }
 
-    val name: String = root.name // TODO: Acquire from levelData, using lazy delegation
+    val name: String by lazy { findName(levelData) }
     val advancements = Directory(root, "advancements", create = true)
     val data = Directory(root, "data")
     val datapacks = Directory(root, "datapacks", require = false)
@@ -31,7 +49,7 @@ class World(val root: Directory) {
     val region = Directory(root, "region")
     val stats = collectStats(Directory(root, "stats", create = true))
     val levelData = composePath(root, "level.dat")
-    val levelDataOld = composePath(root, "level.dat")
+    val levelDataOld = composePath(root, "level.dat_old")
     val ressources = composePath(root, "resources.zip")
     val sessionLock = composePath(root, "session.lock")
 

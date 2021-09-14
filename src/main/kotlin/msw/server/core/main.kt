@@ -3,6 +3,7 @@ package msw.server.core
 import io.grpc.ServerBuilder
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.newSingleThreadContext
@@ -16,7 +17,6 @@ import msw.server.rpc.instancecontrol.InstanceControlService
 import msw.server.rpc.instances.InstancesService
 import msw.server.rpc.presets.PresetsService
 import msw.server.rpc.versions.VersionsService
-import kotlin.coroutines.EmptyCoroutineContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
 fun main() {
@@ -25,7 +25,7 @@ fun main() {
     val netScope = CoroutineScope(EmptyCoroutineContext)
 
     val directory = ServerDirectory(Directory("./minecraft_server", create = true), toplevelScope, netScope)
-    
+
     println(directory.worlds.map { it.name })
 
     val watcher = ServerWatcher(directory, toplevelScope)

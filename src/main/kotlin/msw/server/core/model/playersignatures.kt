@@ -1,11 +1,11 @@
 package msw.server.core.model
 
+import java.time.OffsetDateTime
+import java.util.UUID
 import kotlinx.serialization.Serializable
 import msw.server.core.model.adapters.DateSerializer
 import msw.server.core.model.adapters.LevelSerializer
 import msw.server.core.model.adapters.UUIDSerializer
-import java.time.OffsetDateTime
-import java.util.*
 
 @Serializable
 sealed class PlayerSignatureBase {

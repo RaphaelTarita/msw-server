@@ -4,6 +4,17 @@ import com.toasttab.protokt.Timestamp
 import io.grpc.MethodDescriptor
 import io.grpc.kotlin.AbstractCoroutineServerImpl
 import io.grpc.kotlin.ServerCalls
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.IOException
+import java.io.ObjectOutputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.security.MessageDigest
+import java.time.OffsetDateTime
+import kotlin.coroutines.CoroutineContext
+import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -19,17 +30,6 @@ import msw.server.core.watcher.MemoryAmount
 import msw.server.core.watcher.MemoryUnit
 import msw.server.rpc.versions.VersionDetails
 import msw.server.rpc.versions.VersionLabel
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.IOException
-import java.io.ObjectOutputStream
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.security.MessageDigest
-import java.time.OffsetDateTime
-import kotlin.coroutines.CoroutineContext
-import kotlin.math.min
 
 val HEX = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
 

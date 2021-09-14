@@ -2,18 +2,24 @@ package msw.server.core.versions
 
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.JsonPathException
-import io.ktor.client.*
-import io.ktor.client.engine.apache.*
-import io.ktor.client.request.*
-import kotlinx.coroutines.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.apache.Apache
+import io.ktor.client.request.get
+import java.net.URL
+import java.time.OffsetDateTime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import msw.server.core.common.ExpirableCache
 import msw.server.core.common.nullIfError
 import msw.server.core.versions.model.VersionType
 import msw.server.core.versions.model.Versions
-import java.net.URL
-import java.time.OffsetDateTime
 
 class ManifestCreator(
     private val scope: CoroutineScope,

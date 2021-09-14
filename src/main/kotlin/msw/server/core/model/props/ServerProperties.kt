@@ -1,10 +1,14 @@
 package msw.server.core.model.props
 
+import java.net.InetAddress
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import msw.server.core.model.OPLevel
-import msw.server.core.model.adapters.*
-import java.net.InetAddress
+import msw.server.core.model.adapters.GameDifficultySerializer
+import msw.server.core.model.adapters.GameModeSerializer
+import msw.server.core.model.adapters.LevelSerializer
+import msw.server.core.model.adapters.OptionalIPSerializer
+import msw.server.core.model.adapters.WorldTypeSerializer
 
 // https://minecraft-de.gamepedia.com/Server.properties#Server.properties
 // https://minecraft.gamepedia.com/Server.properties

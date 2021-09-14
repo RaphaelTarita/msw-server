@@ -1,5 +1,9 @@
 package msw.server.core.model.world
 
+import java.io.File
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import kotlin.io.path.inputStream
 import msw.server.core.common.Directory
 import msw.server.core.common.JSONFile
 import msw.server.core.common.composePath
@@ -8,10 +12,6 @@ import net.benwoodworth.knbt.Nbt
 import net.benwoodworth.knbt.NbtCompression
 import net.benwoodworth.knbt.NbtVariant
 import net.benwoodworth.knbt.decodeFromStream
-import java.io.File
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import kotlin.io.path.inputStream
 
 // https://minecraft-de.gamepedia.com/Spielstand-Speicherung#Weltordner
 class World(val root: Directory) {

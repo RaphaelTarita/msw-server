@@ -1,11 +1,11 @@
 package msw.server.core.common
 
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.Json
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.Json
 
 class JSONFile<T>(val location: Path, private val serializer: KSerializer<T>, writeDefaults: Boolean = false) {
     private val json = Json {

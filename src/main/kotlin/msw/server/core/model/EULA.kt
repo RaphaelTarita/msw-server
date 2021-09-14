@@ -1,6 +1,5 @@
 package msw.server.core.model
 
-import msw.server.core.common.readFromPath
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
@@ -9,7 +8,8 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatterBuilder
 import java.time.format.TextStyle
-import java.util.*
+import java.util.Locale
+import msw.server.core.common.readFromPath
 
 class EULA(val location: Path) {
     private val urlRegex =

@@ -1,6 +1,9 @@
 package msw.server.core.common
 
 import com.google.common.net.InetAddresses
+import java.net.InetAddress
+import java.time.OffsetDateTime
+import java.util.UUID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import msw.server.core.model.OPLevel
@@ -8,9 +11,6 @@ import msw.server.core.model.adapters.DateSerializer
 import msw.server.core.model.adapters.IPSerializer
 import msw.server.core.model.adapters.LevelSerializer
 import msw.server.core.model.adapters.UUIDSerializer
-import java.net.InetAddress
-import java.time.OffsetDateTime
-import java.util.*
 
 interface ModelMarker
 

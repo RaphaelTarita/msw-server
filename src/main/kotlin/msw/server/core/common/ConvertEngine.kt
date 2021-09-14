@@ -21,7 +21,7 @@ class ConvertEngine(private val map: Map<String, String>, descriptor: SerialDesc
             }
         }
     }
-    
+
     private var currentIndex = 0
     private val isCollection = descriptor.kind == StructureKind.LIST || descriptor.kind == StructureKind.MAP
     private val size = if (isCollection) Int.MAX_VALUE else descriptor.elementsCount

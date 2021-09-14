@@ -1,11 +1,11 @@
 package msw.server.core.versions.model
 
+import java.net.URL
+import java.time.OffsetDateTime
 import kotlinx.serialization.Serializable
 import msw.server.core.versions.model.adapters.DateSerializer
 import msw.server.core.versions.model.adapters.URLSerializer
 import msw.server.core.versions.model.adapters.VersionTypeSerializer
-import java.net.URL
-import java.time.OffsetDateTime
 
 @Serializable
 data class Version(

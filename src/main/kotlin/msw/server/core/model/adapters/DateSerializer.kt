@@ -1,12 +1,12 @@
 package msw.server.core.model.adapters
 
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 
 object DateSerializer : KSerializer<OffsetDateTime> {
     private val format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z")

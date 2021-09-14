@@ -1,22 +1,23 @@
 package msw.server.core.versions
 
-import io.ktor.client.*
-import io.ktor.client.engine.apache.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.utils.io.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.apache.Apache
+import io.ktor.client.request.get
+import io.ktor.client.request.head
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.contentLength
+import io.ktor.utils.io.ByteReadChannel
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.security.MessageDigest
+import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import msw.server.core.common.coerceToInt
 import msw.server.core.common.toHexString
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.security.MessageDigest
-import kotlin.math.min
 
 class DownloadManager(
     private val scope: CoroutineScope,

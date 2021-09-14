@@ -1,8 +1,8 @@
 package msw.server.core.versions
 
-import msw.server.core.versions.model.VersionType
 import java.net.URL
 import java.time.OffsetDateTime
+import msw.server.core.versions.model.VersionType
 
 data class DownloadManifest(
     val versionID: String,

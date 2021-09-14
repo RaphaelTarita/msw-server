@@ -1,6 +1,6 @@
 package msw.server.core.common
 
-import java.util.*
+import java.util.Random
 
 fun randomString(length: Int = 10, vararg canContainAdditional: Char): String {
     val charset: List<Char> = alphanum.toCharArray()

@@ -15,7 +15,7 @@ val grpcnetty_version = "1.40.1"
 val kotest_version = "5.0.0.M1"
 val kotest_allure_version = "1.0.2"
 val kotest_pitest_version = "1.0.1"
-val knbt_version = "0.9.1"
+val knbt_version = "0.9.2"
 
 plugins {
     application

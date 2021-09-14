@@ -32,7 +32,9 @@ class World(val root: Directory) {
         }
 
         private fun findName(levelData: Path): String {
-            return NBT.decodeFromStream<LevelRoot>(levelData.inputStream(StandardOpenOption.READ)).data.levelName
+            return levelData.inputStream(StandardOpenOption.READ).use {
+                NBT.decodeFromStream<LevelRoot>(it).data.levelName
+            }
         }
     }
 
@@ -56,6 +58,7 @@ class World(val root: Directory) {
     override fun toString(): String = name
 
     override fun equals(other: Any?): Boolean {
+        Array(5) { it }
         if (other === this) return true
         return if (other !is World) false else other.name == this.name
     }

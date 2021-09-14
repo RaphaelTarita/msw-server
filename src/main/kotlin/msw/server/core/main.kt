@@ -25,9 +25,8 @@ fun main() {
     val netScope = CoroutineScope(EmptyCoroutineContext)
 
     val directory = ServerDirectory(Directory("./minecraft_server", create = true), toplevelScope, netScope)
-
-    // TODO: https://github.com/BenWoodworth/knbt/issues/8
-    // println(directory.worlds.map { it.name })
+    
+    println(directory.worlds.map { it.name })
 
     val watcher = ServerWatcher(directory, toplevelScope)
     directory.addPreset("deleteTest", ServerProperties(), true)

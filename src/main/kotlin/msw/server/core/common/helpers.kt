@@ -419,24 +419,28 @@ fun MemoryAmount.toCommandString(): String {
     }"
 }
 
+@Suppress("UNUSED")
 fun <T, U> AbstractCoroutineServerImpl.unary(
     context: CoroutineContext,
     descriptor: MethodDescriptor<T, U>,
     implementation: suspend (request: T) -> U
 ) = ServerCalls.unaryServerMethodDefinition(context, descriptor, implementation)
 
+@Suppress("UNUSED")
 fun <T, U> AbstractCoroutineServerImpl.clientStream(
     context: CoroutineContext,
     descriptor: MethodDescriptor<T, U>,
     implementation: suspend (requests: Flow<T>) -> U
 ) = ServerCalls.clientStreamingServerMethodDefinition(context, descriptor, implementation)
 
+@Suppress("UNUSED")
 fun <T, U> AbstractCoroutineServerImpl.serverStream(
     context: CoroutineContext,
     descriptor: MethodDescriptor<T, U>,
     implementation: (request: T) -> Flow<U>
 ) = ServerCalls.serverStreamingServerMethodDefinition(context, descriptor, implementation)
 
+@Suppress("UNUSED")
 fun <T, U> AbstractCoroutineServerImpl.bidiStream(
     context: CoroutineContext,
     descriptor: MethodDescriptor<T, U>,

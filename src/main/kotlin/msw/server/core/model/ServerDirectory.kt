@@ -38,7 +38,7 @@ import msw.server.rpc.versions.VersionDetails
 class ServerDirectory(
     val root: Directory,
     private val toplevelScope: CoroutineScope,
-    private val netScope: CoroutineScope,
+    netScope: CoroutineScope,
     private val propertiesCodec: StringProperties = StringProperties.Default
 ) {
     companion object {

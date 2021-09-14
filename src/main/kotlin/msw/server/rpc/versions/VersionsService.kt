@@ -34,13 +34,13 @@ class VersionsService(
             .addMethod(unary(context, VersionsGrpc.uninstallVersionMethod, transformer.pack1suspend(::uninstallVersion)))
             .build()
 
-    private fun listInstalledVersions(empty: Empty): VersionIDList {
+    private fun listInstalledVersions(@Suppress("UNUSED_PARAMETER") empty: Empty): VersionIDList {
         return VersionIDList {
             ids = directory.serverVersions.keys.toList()
         }
     }
 
-    private fun listAvailableVersions(empty: Empty): VersionIDList {
+    private fun listAvailableVersions(@Suppress("UNUSED_PARAMETER") empty: Empty): VersionIDList {
         return VersionIDList {
             ids = directory.manifestCreator.createManifests().map { it.versionID }
         }

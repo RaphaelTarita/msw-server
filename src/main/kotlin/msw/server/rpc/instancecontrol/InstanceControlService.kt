@@ -20,6 +20,10 @@ class InstanceControlService(
     private val watcher: ServerWatcher,
     private val transformer: ErrorTransformer<StatusRuntimeException>
 ) : AbstractCoroutineServerImpl() {
+    companion object {
+        private const val COMMAND_MAXLEN = 50
+    }
+
     override fun bindService(): ServerServiceDefinition =
         ServerServiceDefinition.builder(InstanceControlGrpc.serviceDescriptor)
             .addMethod(unary(context, InstanceControlGrpc.getPortForWorldMethod, transformer.pack1suspend(::getPortForWorld)))
@@ -54,7 +58,7 @@ class InstanceControlService(
 
     private fun sendCommand(commandRequest: CommandRequest): ServerResponse {
         var world: String? = null
-        val truncated = commandRequest.cmd.truncate(50)
+        val truncated = commandRequest.cmd.truncate(COMMAND_MAXLEN)
         return try {
             world = watcher.worldOnPort(commandRequest.port).name
             watcher.sendCommand(commandRequest.port, commandRequest.cmd)

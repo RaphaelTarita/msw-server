@@ -132,14 +132,12 @@ class ServerDirectory(
     }
 
     fun addPreset(presetID: String, preset: ServerProperties, force: Boolean = false) {
-        if (!force) {
-            if ("$presetID.properties" !in presets.list()!!) {
-                throw FileAlreadyExistsException(
-                    File(presets, "$presetID.properties"),
-                    null,
-                    "Preset ID '$presetID' already exists!"
-                )
-            }
+        if (!force && "$presetID.properties" !in presets.list()!!) {
+            throw FileAlreadyExistsException(
+                File(presets, "$presetID.properties"),
+                null,
+                "Preset ID '$presetID' already exists!"
+            )
         }
 
         writePreset(presetID, propertiesCodec.encodeToString(preset))

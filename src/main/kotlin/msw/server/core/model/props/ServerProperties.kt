@@ -75,7 +75,7 @@ data class ServerProperties(
     @SerialName("spawn-monsters")
     val spawnMonsters: Boolean = true,
     @SerialName("max-tick-time")
-    val maxTickTime: Long = 60000,
+    val maxTickTime: Long = 60_000,
     @SerialName("max-players")
     val maxPlayers: Int = 20,
     @SerialName("enforce-whitelist")
@@ -87,7 +87,7 @@ data class ServerProperties(
     @SerialName("allow-flight")
     val allowFlight: Boolean = true,
     @SerialName("max-world-size")
-    val maxWorldSize: Int = 29999984,
+    val maxWorldSize: Int = 29_999_984,
     @SerialName("function-permission-level")
     @Serializable(with = LevelSerializer::class)
     val functionPermissionLevel: OPLevel = OPLevel.GAME_MASTER,
@@ -137,7 +137,7 @@ data class ServerProperties(
         require("[0-9a-f]*".toRegex().matches(resourcePackSHA1)) {
             "property resource-pack-sha1 has to be a valid hexadecimal number with lowercase letters"
         }
-        require(maxWorldSize in 1..29999984) {
+        require(maxWorldSize in 1..29_999_984) {
             "property max-world-size has to be between 1 and 29999984"
         }
         require(functionPermissionLevel.num >= OPLevel.GAME_MASTER.num) {

@@ -16,10 +16,10 @@ class PresetsService(
     private val transformer: ErrorTransformer<StatusRuntimeException>
 ) : AbstractCoroutineServerImpl() {
     override fun bindService(): ServerServiceDefinition = ServerServiceDefinition.builder(PresetsGrpc.serviceDescriptor)
-        .addMethod(unary(context, PresetsGrpc.getPresetIDsMethod, transformer.pack1suspend(::getPresetIDs)))
-        .addMethod(unary(context, PresetsGrpc.getPresetMethod, transformer.pack1suspend(::getPreset)))
-        .addMethod(unary(context, PresetsGrpc.setPresetMethod, transformer.pack1suspend(::setPreset)))
-        .addMethod(unary(context, PresetsGrpc.deletePresetMethod, transformer.pack1suspend(::deletePreset)))
+        .addMethod(unary(context, PresetsGrpc.getPresetIDsMethod, transformer.pack1(::getPresetIDs)))
+        .addMethod(unary(context, PresetsGrpc.getPresetMethod, transformer.pack1(::getPreset)))
+        .addMethod(unary(context, PresetsGrpc.setPresetMethod, transformer.pack1(::setPreset)))
+        .addMethod(unary(context, PresetsGrpc.deletePresetMethod, transformer.pack1(::deletePreset)))
         .build()
 
     private fun getPresetIDs(optionalRegex: PresetIDRegex): PresetIDList {

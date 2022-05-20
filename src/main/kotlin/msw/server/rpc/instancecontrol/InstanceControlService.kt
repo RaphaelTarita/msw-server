@@ -26,11 +26,11 @@ class InstanceControlService(
 
     override fun bindService(): ServerServiceDefinition =
         ServerServiceDefinition.builder(InstanceControlGrpc.serviceDescriptor)
-            .addMethod(unary(context, InstanceControlGrpc.getPortForWorldMethod, transformer.pack1suspend(::getPortForWorld)))
-            .addMethod(unary(context, InstanceControlGrpc.getWorldOnPortMethod, transformer.pack1suspend(::getWorldOnPort)))
-            .addMethod(unary(context, InstanceControlGrpc.getConfigMethod, transformer.pack1suspend(::getConfig)))
+            .addMethod(unary(context, InstanceControlGrpc.getPortForWorldMethod, transformer.pack1(::getPortForWorld)))
+            .addMethod(unary(context, InstanceControlGrpc.getWorldOnPortMethod, transformer.pack1(::getWorldOnPort)))
+            .addMethod(unary(context, InstanceControlGrpc.getConfigMethod, transformer.pack1(::getConfig)))
             .addMethod(serverStream(context, InstanceControlGrpc.getLogMethod, transformer.pack1(::getLog)))
-            .addMethod(unary(context, InstanceControlGrpc.sendCommandMethod, transformer.pack1suspend(::sendCommand)))
+            .addMethod(unary(context, InstanceControlGrpc.sendCommandMethod, transformer.pack1(::sendCommand)))
             .build()
 
     private fun getPortForWorld(world: World): Port {

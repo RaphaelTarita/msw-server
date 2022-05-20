@@ -25,13 +25,13 @@ class VersionsService(
 ) : AbstractCoroutineServerImpl() {
     override fun bindService(): ServerServiceDefinition =
         ServerServiceDefinition.builder(VersionsGrpc.serviceDescriptor)
-            .addMethod(unary(context, VersionsGrpc.listInstalledVersionsMethod, transformer.pack1suspend(::listInstalledVersions)))
-            .addMethod(unary(context, VersionsGrpc.listAvailableVersionsMethod, transformer.pack1suspend(::listAvailableVersions)))
-            .addMethod(unary(context, VersionsGrpc.getVersionDetailsMethod, transformer.pack1suspend(::getVersionDetails)))
-            .addMethod(unary(context, VersionsGrpc.recommendedVersionAboveMethod, transformer.pack1suspend(::recommendedVersionAbove)))
-            .addMethod(unary(context, VersionsGrpc.recommendedVersionBelowMethod, transformer.pack1suspend(::recommendedVersionBelow)))
+            .addMethod(unary(context, VersionsGrpc.listInstalledVersionsMethod, transformer.pack1(::listInstalledVersions)))
+            .addMethod(unary(context, VersionsGrpc.listAvailableVersionsMethod, transformer.pack1(::listAvailableVersions)))
+            .addMethod(unary(context, VersionsGrpc.getVersionDetailsMethod, transformer.pack1(::getVersionDetails)))
+            .addMethod(unary(context, VersionsGrpc.recommendedVersionAboveMethod, transformer.pack1(::recommendedVersionAbove)))
+            .addMethod(unary(context, VersionsGrpc.recommendedVersionBelowMethod, transformer.pack1(::recommendedVersionBelow)))
             .addMethod(serverStream(context, VersionsGrpc.installVersionMethod, transformer.pack1(::installVersion)))
-            .addMethod(unary(context, VersionsGrpc.uninstallVersionMethod, transformer.pack1suspend(::uninstallVersion)))
+            .addMethod(unary(context, VersionsGrpc.uninstallVersionMethod, transformer.pack1(::uninstallVersion)))
             .build()
 
     private fun listInstalledVersions(@Suppress("UNUSED_PARAMETER") empty: Empty): VersionIDList {

@@ -17,9 +17,9 @@ class InstancesService(
 ) : AbstractCoroutineServerImpl() {
     override fun bindService(): ServerServiceDefinition =
         ServerServiceDefinition.builder(InstancesGrpc.serviceDescriptor)
-            .addMethod(unary(context, InstancesGrpc.getRunningInstancesMethod, transformer.pack1suspend(::getRunningInstances)))
+            .addMethod(unary(context, InstancesGrpc.getRunningInstancesMethod, transformer.pack1(::getRunningInstances)))
             .addMethod(unary(context, InstancesGrpc.startInstanceMethod, transformer.pack1suspend(::startInstance)))
-            .addMethod(unary(context, InstancesGrpc.stopInstanceMethod, transformer.pack1suspend(::stopInstance)))
+            .addMethod(unary(context, InstancesGrpc.stopInstanceMethod, transformer.pack1(::stopInstance)))
             .build()
 
     private fun getRunningInstances(@Suppress("UNUSED_PARAMETER") empty: Empty): InstanceList {

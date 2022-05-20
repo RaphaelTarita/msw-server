@@ -1,6 +1,6 @@
 import io.kotest.core.config.AbstractProjectConfig
-import io.kotest.extensions.allure.AllureTestReporter
 
 class ProjectConfig : AbstractProjectConfig() {
-    override fun listeners() = listOf(AllureTestReporter())
+    // currently breaks tests, see https://github.com/kotest/kotest-extensions-allure/issues/17
+    // override fun extensions(): List<Extension> = listOf(AllureTestReporter())
 }

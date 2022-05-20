@@ -22,7 +22,7 @@ class InstancesService(
             .addMethod(unary(context, InstancesGrpc.stopInstanceMethod, transformer.pack1suspend(::stopInstance)))
             .build()
 
-    private fun getRunningInstances(empty: Empty): InstanceList {
+    private fun getRunningInstances(@Suppress("UNUSED_PARAMETER") empty: Empty): InstanceList {
         return watcher.getInstances()
     }
 

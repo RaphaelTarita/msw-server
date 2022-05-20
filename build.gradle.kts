@@ -1,30 +1,31 @@
+@file:Suppress("PropertyName")
+
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
-val guava_version = "30.1.1-jre"
-val jsonpath_version = "2.6.0"
-val kxs_version = "1.2.2"
-val arrow_version = "0.13.2"
-val proto_version = "3.17.3"
-val protokt_version = "0.6.4"
-val grpc_version = "1.1.0"
-val grpcnetty_version = "1.40.1"
-val kotest_version = "5.0.0.M1"
-val kotest_allure_version = "1.0.2"
-val kotest_pitest_version = "1.0.1"
-val knbt_version = "0.9.2"
+val guava_version = "31.1-jre"
+val jsonpath_version = "2.7.0"
+val kxs_version = "1.3.3"
+val proto_version = "3.20.1"
+val protokt_version = "0.8.1"
+val grpc_version = "1.2.1"
+val grpcnetty_version = "1.46.0"
+val kotest_version = "5.3.0"
+val kotest_allure_version = "1.1.1"
+val kotest_pitest_version = "1.1.0"
+val knbt_version = "0.11.1"
 
 plugins {
     application
-    kotlin("jvm") version "1.5.30"
-    kotlin("plugin.serialization") version "1.5.30"
-    kotlin("kapt") version "1.5.30"
-    id("io.qameta.allure") version "2.8.1"
-    id("info.solidsoft.pitest") version "1.6.0"
-    id("com.toasttab.protokt") version "0.6.4"
+    kotlin("jvm") version "1.6.21"
+    kotlin("plugin.serialization") version "1.6.21"
+    kotlin("kapt") version "1.6.21"
+    id("io.qameta.allure") version "2.9.6"
+    id("info.solidsoft.pitest") version "1.7.4"
+    id("com.toasttab.protokt") version "0.8.0"
     id("idea")
 }
 
@@ -55,9 +56,9 @@ dependencies {
     implementation("net.benwoodworth.knbt:knbt:$knbt_version")
 
     // testing
-    testImplementation("io.kotest:kotest-runner-junit5:$kotest_version")
-    testImplementation("io.kotest:kotest-assertions-core:$kotest_version")
-    testImplementation("io.kotest:kotest-property:$kotest_version")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotest_version")
+    testImplementation("io.kotest:kotest-assertions-core-jvm:$kotest_version")
+    testImplementation("io.kotest:kotest-property-jvm:$kotest_version")
     testImplementation("io.kotest.extensions:kotest-extensions-allure:$kotest_allure_version")
     testImplementation("io.kotest.extensions:kotest-extensions-pitest:$kotest_pitest_version")
 }
@@ -86,8 +87,8 @@ tasks.withType<Test> {
 }
 
 allure {
-    autoconfigure = false
-    version = "2.14.0"
+    adapter.autoconfigure.set(false)
+    version.set("2.18.0")
 }
 
 configure<PitestPluginExtension> {

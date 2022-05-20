@@ -3,10 +3,11 @@ package msw.server.core
 import io.grpc.ServerBuilder
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
+import java.util.concurrent.Executors
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.asCoroutineDispatcher
 import msw.server.core.common.Directory
 import msw.server.core.common.ErrorTransformer
 import msw.server.core.model.ServerDirectory
@@ -20,7 +21,7 @@ import msw.server.rpc.versions.VersionsService
 
 @OptIn(ExperimentalCoroutinesApi::class)
 fun main() {
-    val toplevelDispatcher = newSingleThreadContext("toplevel")
+    val toplevelDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     val toplevelScope = CoroutineScope(toplevelDispatcher)
     val netScope = CoroutineScope(EmptyCoroutineContext)
 

@@ -3,6 +3,7 @@ package msw.server.core.versions
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.JsonPathException
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.apache.Apache
 import io.ktor.client.request.get
 import java.net.URL
@@ -89,7 +90,7 @@ class ManifestCreator(
             delay(updateRate.random())
         }
         spamProtectionTimestamp = System.currentTimeMillis()
-        return client.get(url)
+        return client.get(url).body()
     }
 
     private suspend fun findUrlInDocument(

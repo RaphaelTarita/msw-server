@@ -2,11 +2,8 @@ package msw.server.core.model.world
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import net.benwoodworth.knbt.ExperimentalNbtApi
-import net.benwoodworth.knbt.NbtRoot
 
-@OptIn(ExperimentalNbtApi::class)
-@NbtRoot(name = "")
+@SerialName("")
 @Serializable
 data class LevelRoot(
     @SerialName("Data")

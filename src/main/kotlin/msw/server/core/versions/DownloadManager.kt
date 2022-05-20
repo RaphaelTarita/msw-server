@@ -4,7 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.apache.Apache
 import io.ktor.client.request.get
 import io.ktor.client.request.head
-import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.contentLength
 import io.ktor.utils.io.ByteReadChannel
 import java.nio.file.Files
@@ -39,7 +39,7 @@ class DownloadManager(
 
     private fun checkSize(manifest: DownloadManifest) {
         val actualSize = runBlocking {
-            client.head<HttpResponse>(manifest.downloadUrl).contentLength()
+            client.head(manifest.downloadUrl).contentLength()
         }
 
         if (actualSize != manifest.size) {
@@ -72,7 +72,7 @@ class DownloadManager(
     }
 
     private suspend fun initDownload(manifest: DownloadManifest): ByteReadChannel {
-        return client.get(manifest.downloadUrl)
+        return client.get(manifest.downloadUrl).bodyAsChannel()
     }
 
     private suspend fun resumeDownload(manifest: DownloadManifest, progress: Long, md: MessageDigest): ByteReadChannel {

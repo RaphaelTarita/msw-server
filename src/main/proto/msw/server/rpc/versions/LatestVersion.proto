@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package msw.server.rpc.versions;
+
+import "msw/server/rpc/versions/VersionDetails.proto";
+
+message LatestVersion {
+  bool installed = 1;
+  VersionDetails details = 2;
+}

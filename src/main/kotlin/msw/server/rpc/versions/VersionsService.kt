@@ -28,6 +28,8 @@ class VersionsService(
             .addMethod(unary(context, VersionsGrpc.listInstalledVersionsMethod, transformer.pack1(::listInstalledVersions)))
             .addMethod(unary(context, VersionsGrpc.listAvailableVersionsMethod, transformer.pack1(::listAvailableVersions)))
             .addMethod(unary(context, VersionsGrpc.getVersionDetailsMethod, transformer.pack1(::getVersionDetails)))
+            .addMethod(unary(context, VersionsGrpc.getLatestReleaseMethod, transformer.pack1(::getLatestRelease)))
+            .addMethod(unary(context, VersionsGrpc.getLatestSnapshotMethod, transformer.pack1(::getLatestSnapshot)))
             .addMethod(unary(context, VersionsGrpc.recommendedVersionAboveMethod, transformer.pack1(::recommendedVersionAbove)))
             .addMethod(unary(context, VersionsGrpc.recommendedVersionBelowMethod, transformer.pack1(::recommendedVersionBelow)))
             .addMethod(serverStream(context, VersionsGrpc.installVersionMethod, transformer.pack1(::installVersion)))
@@ -51,6 +53,22 @@ class VersionsService(
             directory.getVersionDetails(version.id)
         } else {
             directory.manifestCreator.createManifest(version.id).toVersionDetails()
+        }
+    }
+
+    private fun getLatestRelease(@Suppress("UNUSED_PARAMETER") empty: Empty): LatestVersion {
+        val latestRelease = directory.manifestCreator.latestRelease()
+        return LatestVersion {
+            installed = latestRelease.versionID in directory.serverVersions
+            details = latestRelease.toVersionDetails()
+        }
+    }
+
+    private fun getLatestSnapshot(@Suppress("UNUSED_PARAMETER") empty: Empty): LatestVersion {
+        val latestSnapshot = directory.manifestCreator.latestSnapshot()
+        return LatestVersion {
+            installed = latestSnapshot.versionID in directory.serverVersions
+            details = latestSnapshot.toVersionDetails()
         }
     }
 

@@ -4,6 +4,8 @@ import com.google.common.collect.HashBiMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import msw.server.core.common.InstanceConfiguration
+import msw.server.core.common.MemoryAmount
 import msw.server.core.common.addTerminationCallback
 import msw.server.core.common.mebibytes
 import msw.server.core.common.runCommand

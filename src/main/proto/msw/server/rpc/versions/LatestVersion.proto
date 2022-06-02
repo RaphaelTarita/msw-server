@@ -1,5 +1,9 @@
 syntax = "proto3";
 
+option java_multiple_files = true;
+option java_package = "msw.server.rpc.versions";
+option java_outer_classname = "LatestVersionProto";
+
 package msw.server.rpc.versions;
 
 import "msw/server/rpc/versions/VersionDetails.proto";

@@ -1,5 +1,9 @@
 syntax = "proto3";
 
+option java_multiple_files = true;
+option java_package = "msw.server.rpc.instances";
+option java_outer_classname = "StartInstanceRequestProto";
+
 package msw.server.rpc.instances;
 
 import "msw/server/core/watcher/InstanceConfiguration.proto";

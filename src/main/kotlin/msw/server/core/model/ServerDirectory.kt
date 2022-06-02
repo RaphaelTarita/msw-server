@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.nameWithoutExtension
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -86,7 +85,6 @@ class ServerDirectory(
                 .toMutableMap()
         }
 
-        @OptIn(ExperimentalPathApi::class)
         private fun Path.serverVersionID(): String {
             return nameWithoutExtension
                 .substringAfter('.', "")

@@ -1,20 +1,16 @@
 package msw.server.rpc.versions
 
-import com.toasttab.protokt.Empty
-import io.grpc.ServerServiceDefinition
 import io.grpc.StatusRuntimeException
-import io.grpc.kotlin.AbstractCoroutineServerImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import msw.server.core.common.ErrorTransformer
+import msw.server.core.common.NoArg
 import msw.server.core.common.ServerResponse
 import msw.server.core.common.comparatorForNested
 import msw.server.core.common.invertInsertionPoint
-import msw.server.core.common.serverStream
 import msw.server.core.common.toVersionDetails
-import msw.server.core.common.unary
 import msw.server.core.common.versionComparatorFor
 import msw.server.core.model.ServerDirectory
 import msw.server.core.versions.model.VersionType
@@ -22,41 +18,28 @@ import msw.server.core.versions.model.VersionType
 class VersionsService(
     private val directory: ServerDirectory,
     private val transformer: ErrorTransformer<StatusRuntimeException>
-) : AbstractCoroutineServerImpl() {
-    override fun bindService(): ServerServiceDefinition =
-        ServerServiceDefinition.builder(VersionsGrpc.serviceDescriptor)
-            .addMethod(unary(context, VersionsGrpc.listInstalledVersionsMethod, transformer.pack1(::listInstalledVersions)))
-            .addMethod(unary(context, VersionsGrpc.listAvailableVersionsMethod, transformer.pack1(::listAvailableVersions)))
-            .addMethod(unary(context, VersionsGrpc.getVersionDetailsMethod, transformer.pack1(::getVersionDetails)))
-            .addMethod(unary(context, VersionsGrpc.getLatestReleaseMethod, transformer.pack1(::getLatestRelease)))
-            .addMethod(unary(context, VersionsGrpc.getLatestSnapshotMethod, transformer.pack1(::getLatestSnapshot)))
-            .addMethod(unary(context, VersionsGrpc.recommendedVersionAboveMethod, transformer.pack1(::recommendedVersionAbove)))
-            .addMethod(unary(context, VersionsGrpc.recommendedVersionBelowMethod, transformer.pack1(::recommendedVersionBelow)))
-            .addMethod(serverStream(context, VersionsGrpc.installVersionMethod, transformer.pack1(::installVersion)))
-            .addMethod(unary(context, VersionsGrpc.uninstallVersionMethod, transformer.pack1(::uninstallVersion)))
-            .build()
-
-    private fun listInstalledVersions(@Suppress("UNUSED_PARAMETER") empty: Empty): VersionIDList {
+) : VersionsGrpcKt.VersionsCoroutineImplBase() {
+    override suspend fun listInstalledVersions(@Suppress("UNUSED_PARAMETER") request: NoArg): VersionIDList {
         return VersionIDList {
             ids = directory.serverVersions.keys.toList()
         }
     }
 
-    private fun listAvailableVersions(@Suppress("UNUSED_PARAMETER") empty: Empty): VersionIDList {
+    override suspend fun listAvailableVersions(@Suppress("UNUSED_PARAMETER") request: NoArg): VersionIDList {
         return VersionIDList {
             ids = directory.manifestCreator.createManifests().map { it.versionID }
         }
     }
 
-    private fun getVersionDetails(version: VersionID): VersionDetails {
-        return if (directory.serverVersions.containsKey(version.id)) {
-            directory.getVersionDetails(version.id)
+    override suspend fun getVersionDetails(request: VersionID): VersionDetails {
+        return if (directory.serverVersions.containsKey(request.id)) {
+            directory.getVersionDetails(request.id)
         } else {
-            directory.manifestCreator.createManifest(version.id).toVersionDetails()
+            directory.manifestCreator.createManifest(request.id).toVersionDetails()
         }
     }
 
-    private fun getLatestRelease(@Suppress("UNUSED_PARAMETER") empty: Empty): LatestVersion {
+    override suspend fun getLatestRelease(@Suppress("UNUSED_PARAMETER") request: NoArg): LatestVersion {
         val latestRelease = directory.manifestCreator.latestRelease()
         return LatestVersion {
             installed = latestRelease.versionID in directory.serverVersions
@@ -64,7 +47,7 @@ class VersionsService(
         }
     }
 
-    private fun getLatestSnapshot(@Suppress("UNUSED_PARAMETER") empty: Empty): LatestVersion {
+    override suspend fun getLatestSnapshot(@Suppress("UNUSED_PARAMETER") request: NoArg): LatestVersion {
         val latestSnapshot = directory.manifestCreator.latestSnapshot()
         return LatestVersion {
             installed = latestSnapshot.versionID in directory.serverVersions
@@ -72,8 +55,8 @@ class VersionsService(
         }
     }
 
-    private fun recommendedVersionAbove(version: VersionID): RecommendedVersion {
-        val (list, index) = recommendationHelper(version.id)
+    override suspend fun recommendedVersionAbove(request: VersionID): RecommendedVersion {
+        val (list, index) = recommendationHelper(request.id)
         val (found, pivot) = if (index < 0) false to invertInsertionPoint(index) else true to index
         val above = list.subList(pivot, list.size)
         return if (found) {
@@ -96,8 +79,8 @@ class VersionsService(
         }
     }
 
-    private fun recommendedVersionBelow(version: VersionID): RecommendedVersion {
-        val (list, index) = recommendationHelper(version.id)
+    override suspend fun recommendedVersionBelow(request: VersionID): RecommendedVersion {
+        val (list, index) = recommendationHelper(request.id)
         val (found, pivot) = if (index < 0) false to invertInsertionPoint(index) else true to index
         val below = list.subList(0, pivot)
         return if (found) {
@@ -115,14 +98,14 @@ class VersionsService(
                     installed = false
                     val rootDoc = directory.manifestCreator.rootDocument()
                     val comp = versionComparatorFor(rootDoc)
-                    if (rootDoc.versions.first { it.id == version.id }.type != VersionType.SNAPSHOT) {
-                        version.id
+                    if (rootDoc.versions.first { it.id == request.id }.type != VersionType.SNAPSHOT) {
+                        request.id
                     } else {
                         val releases = rootDoc.versions
                             .sortedWith(comparatorForNested(comp) { it.id })
                             .filterNot { it.type == VersionType.SNAPSHOT }
 
-                        val releaseIndex = invertInsertionPoint(releases.map { it.id }.binarySearch(version.id, comp))
+                        val releaseIndex = invertInsertionPoint(releases.map { it.id }.binarySearch(request.id, comp))
 
                         releases[releaseIndex - 1].id
                     }
@@ -132,7 +115,7 @@ class VersionsService(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun installVersion(version: VersionID): Flow<Progress> {
+    override fun installVersion(request: VersionID): Flow<Progress> {
         val channel = Channel<Progress>(Channel.UNLIMITED)
         val listener: suspend (Long, Long) -> Unit = { progress, size ->
             if (progress == size) {
@@ -141,7 +124,7 @@ class VersionsService(
                         status = Progress.Status.Response(
                             ServerResponse {
                                 successful = true
-                                response = "Version with ID ${version.id} was successfully downloaded"
+                                response = "Version with ID ${request.id} was successfully downloaded"
                             }
                         )
                     }
@@ -159,7 +142,7 @@ class VersionsService(
 
         return flow {
             try {
-                val job = directory.addVersion(version.id, listener)
+                val job = directory.addVersion(request.id, listener)
                 while (!channel.isClosedForReceive) {
                     emit(channel.receive())
                 }
@@ -170,7 +153,7 @@ class VersionsService(
                         status = Progress.Status.Response(
                             ServerResponse {
                                 successful = false
-                                response = "Failed to download version with ID '${version.id}'. Reason: ${exc.message}"
+                                response = "Failed to download version with ID '${request.id}'. Reason: ${exc.message}"
                             }
                         )
                     }
@@ -179,21 +162,21 @@ class VersionsService(
         }
     }
 
-    private fun uninstallVersion(version: VersionID): ServerResponse {
+    override suspend fun uninstallVersion(request: VersionID): ServerResponse {
         return try {
-            val success = directory.removeVersion(version.id)
+            val success = directory.removeVersion(request.id)
             ServerResponse {
                 successful = success
                 response = if (success) {
-                    "Successfully removed version '${version.id}'"
+                    "Successfully removed version '${request.id}'"
                 } else {
-                    "Version with ID '${version.id}' is not installed"
+                    "Version with ID '${request.id}' is not installed"
                 }
             }
         } catch (exc: Exception) {
             ServerResponse {
                 successful = false
-                response = "Could not remove version with ID '${version.id}'. Reason: ${exc.message}"
+                response = "Could not remove version with ID '${request.id}'. Reason: ${exc.message}"
             }
         }
     }

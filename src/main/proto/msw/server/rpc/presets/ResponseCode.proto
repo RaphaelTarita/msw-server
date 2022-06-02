@@ -1,5 +1,9 @@
 syntax = "proto3";
 
+option java_multiple_files = true;
+option java_package = "msw.server.rpc.presets";
+option java_outer_classname = "ResponseCodeProto";
+
 package msw.server.rpc.presets;
 
 enum ResponseCode {

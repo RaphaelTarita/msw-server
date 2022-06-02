@@ -26,8 +26,6 @@ import kotlinx.serialization.StringFormat
 import msw.server.core.versions.DownloadManifest
 import msw.server.core.versions.model.VersionType
 import msw.server.core.versions.model.Versions
-import msw.server.core.watcher.MemoryAmount
-import msw.server.core.watcher.MemoryUnit
 import msw.server.rpc.versions.VersionDetails
 import msw.server.rpc.versions.VersionLabel
 

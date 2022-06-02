@@ -8,12 +8,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import msw.server.core.common.ErrorTransformer
+import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.Port
 import msw.server.core.common.ServerResponse
 import msw.server.core.common.serverStream
 import msw.server.core.common.truncate
 import msw.server.core.common.unary
-import msw.server.core.watcher.InstanceConfiguration
 import msw.server.core.watcher.ServerWatcher
 
 class InstanceControlService(
@@ -25,12 +25,12 @@ class InstanceControlService(
     }
 
     override fun bindService(): ServerServiceDefinition =
-        ServerServiceDefinition.builder(InstanceControlGrpc.serviceDescriptor)
-            .addMethod(unary(context, InstanceControlGrpc.getPortForWorldMethod, transformer.pack1(::getPortForWorld)))
-            .addMethod(unary(context, InstanceControlGrpc.getWorldOnPortMethod, transformer.pack1(::getWorldOnPort)))
-            .addMethod(unary(context, InstanceControlGrpc.getConfigMethod, transformer.pack1(::getConfig)))
-            .addMethod(serverStream(context, InstanceControlGrpc.getLogMethod, transformer.pack1(::getLog)))
-            .addMethod(unary(context, InstanceControlGrpc.sendCommandMethod, transformer.pack1(::sendCommand)))
+        ServerServiceDefinition.builder(InstanceControlGrpc.getServiceDescriptor())
+            .addMethod(unary(context, InstanceControlGrpc.getGetPortForWorldMethod(), transformer.pack1(::getPortForWorld)))
+            .addMethod(unary(context, InstanceControlGrpc.getGetWorldOnPortMethod(), transformer.pack1(::getWorldOnPort)))
+            .addMethod(unary(context, InstanceControlGrpc.getGetConfigMethod(), transformer.pack1(::getConfig)))
+            .addMethod(serverStream(context, InstanceControlGrpc.getGetLogMethod(), transformer.pack1(::getLog)))
+            .addMethod(unary(context, InstanceControlGrpc.getSendCommandMethod(), transformer.pack1(::sendCommand)))
             .build()
 
     private fun getPortForWorld(world: World): Port {

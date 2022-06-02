@@ -1,17 +1,22 @@
 @file:Suppress("PropertyName")
 
+import com.google.protobuf.gradle.generateProtoTasks
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.plugins
+import com.google.protobuf.gradle.protobuf
+import com.toasttab.protokt.gradle.protokt
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktor_version: String by project
-val kotlin_version: String by project
-val logback_version: String by project
+val ktor_version = "2.0.2"
+val kotlin_version = "1.6.21"
+val logback_version = "1.2.11"
 val guava_version = "31.1-jre"
 val jsonpath_version = "2.7.0"
 val kxs_version = "1.3.3"
 val proto_version = "3.20.1"
-val protokt_version = "0.8.1"
-val grpc_version = "1.2.1"
+val protokt_version = "0.9.0"
+val grpc_version = "1.3.0"
 val grpcnetty_version = "1.46.0"
 val kotest_version = "5.3.0"
 val kotest_allure_version = "1.2.0"
@@ -25,7 +30,7 @@ plugins {
     kotlin("kapt") version "1.6.21"
     id("io.qameta.allure") version "2.9.6"
     id("info.solidsoft.pitest") version "1.7.4"
-    id("com.toasttab.protokt") version "0.8.0"
+    id("com.toasttab.protokt") version "0.9.0"
     id("idea")
 }
 
@@ -41,6 +46,8 @@ dependencies {
     implementation("com.toasttab.protokt:protokt-runtime-grpc:$protokt_version")
     implementation("com.google.protobuf:protobuf-java:$proto_version")
     implementation("io.grpc:grpc-kotlin-stub:$grpc_version")
+    implementation("io.grpc:grpc-stub:$grpcnetty_version")
+    implementation("io.grpc:protoc-gen-grpc-kotlin:$grpc_version")
     runtimeOnly("io.grpc:grpc-netty-shaded:$grpcnetty_version")
 
     // ktor
@@ -65,6 +72,22 @@ dependencies {
 
 protokt {
     generateGrpc = true
+}
+
+protobuf {
+    plugins {
+        id("grpckt") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:$grpc_version:jdk8@jar"
+        }
+    }
+
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                id("grpckt")
+            }
+        }
+    }
 }
 
 tasks.withType<JavaCompile>().all {

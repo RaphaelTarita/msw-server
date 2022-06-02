@@ -2,11 +2,8 @@ syntax = "proto3";
 
 option java_multiple_files = true;
 option java_package = "msw.server.core.common";
-option java_outer_classname = "ServerResponseProto";
+option java_outer_classname = "NoArgProto";
 
 package msw.server.core.common;
 
-message ServerResponse {
-  bool successful = 1;
-  string response = 2;
-}
+message NoArg {}

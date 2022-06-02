@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package msw.server.rpc.versions;
 
-import "google/protobuf/empty.proto";
+import "msw/server/core/common/NoArg.proto";
 import "msw/server/core/common/ServerResponse.proto";
 import "msw/server/rpc/versions/VersionIDList.proto";
 import "msw/server/rpc/versions/VersionID.proto";
@@ -12,11 +12,11 @@ import "msw/server/rpc/versions/RecommendedVersion.proto";
 import "msw/server/rpc/versions/Progress.proto";
 
 service Versions {
-  rpc ListInstalledVersions(google.protobuf.Empty) returns (VersionIDList);
-  rpc ListAvailableVersions(google.protobuf.Empty) returns (VersionIDList);
+  rpc ListInstalledVersions(msw.server.core.common.NoArg) returns (VersionIDList);
+  rpc ListAvailableVersions(msw.server.core.common.NoArg) returns (VersionIDList);
   rpc GetVersionDetails(VersionID) returns (VersionDetails);
-  rpc GetLatestRelease(google.protobuf.Empty) returns (LatestVersion);
-  rpc GetLatestSnapshot(google.protobuf.Empty) returns (LatestVersion);
+  rpc GetLatestRelease(msw.server.core.common.NoArg) returns (LatestVersion);
+  rpc GetLatestSnapshot(msw.server.core.common.NoArg) returns (LatestVersion);
   rpc RecommendedVersionAbove(VersionID) returns (RecommendedVersion);
   rpc RecommendedVersionBelow(VersionID) returns (RecommendedVersion);
   rpc InstallVersion(VersionID) returns (stream Progress);

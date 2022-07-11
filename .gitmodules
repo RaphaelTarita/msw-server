@@ -1,0 +1,4 @@
+[submodule "msw-proto"]
+	path = src/main/proto
+	url = https://github.com/RaphaelTarita/msw-proto.git
+	branch = develop

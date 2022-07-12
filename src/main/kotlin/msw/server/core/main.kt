@@ -28,7 +28,7 @@ fun main() {
 
     val root = Directory("./minecraft_server", create = true)
     val watcher = if (root.existsOrNull()?.list()?.none { "server" in it && it.endsWith(".jar") } != false) {
-        ServerWatcher.initNew(toplevelScope, netScope, root, 25565, "1.19")
+        ServerWatcher.initNew(toplevelScope, netScope, root, 25565)
     } else {
         val directory = ServerDirectory(root, toplevelScope, netScope)
         ServerWatcher(directory, toplevelScope)

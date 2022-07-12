@@ -30,14 +30,14 @@ class ServerWatcher(
             netScope: CoroutineScope,
             root: Directory,
             port: Int,
-            initialVersionId: String
+            initialVersionId: String? = null
         ): ServerWatcher {
             val manifestCreator = ManifestCreator(netScope)
             val downloadManager = DownloadManager(netScope)
 
             val initialVersionPath = Path("minecraft_server_$initialVersionId.jar")
 
-            val manifest = manifestCreator.createManifest(initialVersionId)
+            val manifest = if (initialVersionId != null) manifestCreator.createManifest(initialVersionId) else manifestCreator.latestRelease()
             downloadManager.download(manifest, root.toPath().resolve(initialVersionPath))
 
             val command = buildList {

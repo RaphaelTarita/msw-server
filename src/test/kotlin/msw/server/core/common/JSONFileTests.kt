@@ -67,12 +67,12 @@ class JSONFileTests : FunSpec({
     include(modelTests("Model06", m6))
 }) {
     companion object {
-        private val m1 = JSONFile("$exists/json01.json", Model01.serializer(), true) to Model01()
-        private val m2 = JSONFile("$exists/json02.json", Model02.serializer(), true) to Model02()
-        private val m3 = JSONFile("$exists/json03.json", Model03.serializer(), true) to Model03()
-        private val m4 = JSONFile("$exists/json04.json", Model04.serializer(), true) to Model04()
-        private val m5 = JSONFile("$exists/json05.json", Model05.serializer(), true) to Model05()
-        private val m6 = JSONFile("$exists/json06.json", Model06.serializer(), true) to Model06()
+        private val m1 = JSONFile("$exists/json01.json", Model01.serializer(), writeDefaults = true) to Model01()
+        private val m2 = JSONFile("$exists/json02.json", Model02.serializer(), writeDefaults = true) to Model02()
+        private val m3 = JSONFile("$exists/json03.json", Model03.serializer(), writeDefaults = true) to Model03()
+        private val m4 = JSONFile("$exists/json04.json", Model04.serializer(), writeDefaults = true) to Model04()
+        private val m5 = JSONFile("$exists/json05.json", Model05.serializer(), writeDefaults = true) to Model05()
+        private val m6 = JSONFile("$exists/json06.json", Model06.serializer(), writeDefaults = true) to Model06()
 
         private fun cleanupAll() {
             m1.first.reload()

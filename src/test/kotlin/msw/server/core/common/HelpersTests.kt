@@ -20,11 +20,11 @@ class HelpersTests : FunSpec({
 
     context("existsOrNull(File) Tests: ") {
         test("File path '$exists' exists, therefore existsOrNull(File(path)) should return File") {
-            existsOrNull(File(exists)).shouldBeInstanceOf<File>()
+            File(exists).existsOrNull().shouldBeInstanceOf<File>()
         }
 
         test("File path '$existsNot' does not exist, therefore existsOrNull(File(path) should return null") {
-            existsOrNull(File(existsNot)).shouldBeNull()
+            File(existsNot).existsOrNull().shouldBeNull()
         }
     }
 

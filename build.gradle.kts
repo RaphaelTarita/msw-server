@@ -9,7 +9,7 @@ import info.solidsoft.gradle.pitest.PitestPluginExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktor_version = "2.0.2"
-val kotlin_version = "1.6.21"
+val kotlin_version = "1.7.10"
 val logback_version = "1.2.11"
 val guava_version = "31.1-jre"
 val jsonpath_version = "2.7.0"
@@ -25,9 +25,9 @@ val knbt_version = "0.11.1"
 
 plugins {
     application
-    kotlin("jvm") version "1.6.21"
-    kotlin("plugin.serialization") version "1.6.21"
-    kotlin("kapt") version "1.6.21"
+    kotlin("jvm") version "1.7.10"
+    kotlin("plugin.serialization") version "1.7.10"
+    kotlin("kapt") version "1.7.10"
     id("io.qameta.allure") version "2.9.6"
     id("info.solidsoft.pitest") version "1.7.4"
     id("com.toasttab.protokt") version "0.9.0"

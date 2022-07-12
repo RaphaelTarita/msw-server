@@ -34,10 +34,11 @@ import msw.server.rpc.versions.VersionDetails
 
 // https://minecraft-de.gamepedia.com/Minecraft-Server#Serverordner
 @OptIn(ExperimentalSerializationApi::class)
-class ServerDirectory(
+class ServerDirectory internal constructor(
+    val manifestCreator: ManifestCreator,
+    private val manager: DownloadManager,
     val root: Directory,
     private val toplevelScope: CoroutineScope,
-    netScope: CoroutineScope,
     private val propertiesCodec: StringProperties = StringProperties.Default
 ) {
     companion object {
@@ -91,8 +92,6 @@ class ServerDirectory(
         }
     }
 
-    val manifestCreator = ManifestCreator(netScope)
-    private val manager = DownloadManager(netScope)
     private val mutableVersions = scanForVersions(root, manifestCreator)
     val serverVersions: Map<String, Pair<VersionDetails, Path>>
         get() = mutableVersions
@@ -100,18 +99,25 @@ class ServerDirectory(
     val logs = Directory(root, "logs")
     val worlds = scanForWorlds(root)
     val presets = Directory(root, "presets", create = true)
-    val bannedIPs = JSONFile(composePath(root, "banned-ips.json"), ListSerializer(BannedIP.serializer()))
-    val bannedPlayers = JSONFile(composePath(root, "banned-players.json"), ListSerializer(BannedPlayer.serializer()))
+    val bannedIPs = JSONFile(composePath(root, "banned-ips.json"), ListSerializer(BannedIP.serializer()), listOf())
+    val bannedPlayers = JSONFile(composePath(root, "banned-players.json"), ListSerializer(BannedPlayer.serializer()), listOf())
     val eula = EULA(composePath(root, "eula.txt"))
-    val ops = JSONFile(composePath(root, "ops.json"), ListSerializer(OP.serializer()))
+    val ops = JSONFile(composePath(root, "ops.json"), ListSerializer(OP.serializer()), listOf())
     val properties = composePath(root, "server.properties")
-    val serverIcon = existsOrNull(composePath(root, "sever-icon.png"))
-    val usercache = JSONFile(composePath(root, "usercache.json"), ListSerializer(ExpirablePlayerSignature.serializer()))
-    val whitelist = JSONFile(composePath(root, "whitelist.json"), ListSerializer(PlayerSignature.serializer()))
+    val serverIcon = composePath(root, "sever-icon.png").existsOrNull()
+    val usercache = JSONFile(composePath(root, "usercache.json"), ListSerializer(ExpirablePlayerSignature.serializer()), listOf())
+    val whitelist = JSONFile(composePath(root, "whitelist.json"), ListSerializer(PlayerSignature.serializer()), listOf())
 
     init {
         addPreset("default", ServerProperties(), true)
     }
+
+    constructor(
+        root: Directory,
+        toplevelScope: CoroutineScope,
+        netScope: CoroutineScope,
+        propertiesCodec: StringProperties = StringProperties.Default,
+    ) : this(ManifestCreator(netScope), DownloadManager(netScope), root, toplevelScope, propertiesCodec)
 
     fun presetIDs(): List<String> {
         return presets.listFiles()!!.map { it.nameWithoutExtension }

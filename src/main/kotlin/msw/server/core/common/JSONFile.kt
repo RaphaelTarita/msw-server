@@ -7,7 +7,7 @@ import java.nio.file.StandardOpenOption
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 
-class JSONFile<T>(val location: Path, private val serializer: KSerializer<T>, writeDefaults: Boolean = false) {
+class JSONFile<T>(val location: Path, private val serializer: KSerializer<T>, initial: T? = null, writeDefaults: Boolean = false) {
     private val json = Json {
         encodeDefaults = writeDefaults
         prettyPrint = true
@@ -16,11 +16,15 @@ class JSONFile<T>(val location: Path, private val serializer: KSerializer<T>, wr
     private var objCache: T? = null
 
     init {
+        if (initial != null) {
+            setAndCommit(initial)
+        }
+
         stringContent = readFromPath(location)
     }
 
-    constructor(location: String, serializer: KSerializer<T>, writeDefaults: Boolean = false)
-            : this(Paths.get(location), serializer, writeDefaults)
+    constructor(location: String, serializer: KSerializer<T>, initial: T? = null, writeDefaults: Boolean = false)
+            : this(Paths.get(location), serializer, initial, writeDefaults)
 
     private fun cache(): T {
         return json.decodeFromString(serializer, stringContent).apply { objCache = this }
@@ -41,7 +45,7 @@ class JSONFile<T>(val location: Path, private val serializer: KSerializer<T>, wr
 
     fun write() {
         if (objCache == null) return
-        Files.newBufferedWriter(location, StandardOpenOption.WRITE).apply {
+        Files.newBufferedWriter(location, StandardOpenOption.WRITE, StandardOpenOption.CREATE).apply {
             write(json.encodeToString(serializer, objCache!!).also { stringContent = it })
         }.close()
     }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asCoroutineDispatcher
 import msw.server.core.common.Directory
 import msw.server.core.common.ErrorTransformer
+import msw.server.core.common.existsOrNull
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.props.ServerProperties
 import msw.server.core.versions.DownloadException
@@ -25,12 +26,16 @@ fun main() {
     val toplevelScope = CoroutineScope(toplevelDispatcher)
     val netScope = CoroutineScope(EmptyCoroutineContext)
 
-    val directory = ServerDirectory(Directory("./minecraft_server", create = true), toplevelScope, netScope)
+    val root = Directory("./minecraft_server", create = true)
+    val watcher = if (root.existsOrNull()?.list()?.none { "server" in it && it.endsWith(".jar") } != false) {
+        ServerWatcher.initNew(toplevelScope, netScope, root, 25565, "1.19")
+    } else {
+        val directory = ServerDirectory(root, toplevelScope, netScope)
+        ServerWatcher(directory, toplevelScope)
+    }
 
-    println(directory.worlds.map { it.name })
-
-    val watcher = ServerWatcher(directory, toplevelScope)
-    directory.addPreset("deleteTest", ServerProperties(), true)
+    println(watcher.directory.worlds.map { it.name })
+    watcher.directory.addPreset("deleteTest", ServerProperties(), true)
 
     val transformer = ErrorTransformer.typedRulesetWithLambdaFallback(
         {
@@ -101,8 +106,8 @@ fun main() {
     ServerBuilder.forPort(50051)
         .addService(InstanceControlService(watcher, transformer))
         .addService(InstancesService(watcher, transformer))
-        .addService(PresetsService(directory, transformer))
-        .addService(VersionsService(directory, transformer))
+        .addService(PresetsService(watcher.directory, transformer))
+        .addService(VersionsService(watcher.directory, transformer))
         .build()
         .start()
         .awaitTermination()

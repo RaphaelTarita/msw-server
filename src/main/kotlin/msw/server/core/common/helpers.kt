@@ -133,12 +133,12 @@ inline fun <reified E : Throwable, R> nullIfError(block: () -> R): R? {
     }
 }
 
-fun existsOrNull(file: File): File? {
-    return if (file.exists()) file else null
+fun File.existsOrNull(): File? {
+    return if (exists()) this else null
 }
 
-fun existsOrNull(file: Path): Path? {
-    return if (Files.exists(file)) file else null
+fun Path.existsOrNull(): Path? {
+    return if (Files.exists(this)) this else null
 }
 
 fun String.replaceMultiple(map: Map<String, String>, ignoreCase: Boolean = false): String {

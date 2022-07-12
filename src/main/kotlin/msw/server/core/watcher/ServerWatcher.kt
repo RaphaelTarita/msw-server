@@ -1,9 +1,12 @@
 package msw.server.core.watcher
 
 import com.google.common.collect.HashBiMap
+import java.io.OutputStream
+import kotlin.io.path.Path
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import msw.server.core.common.Directory
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.MemoryAmount
 import msw.server.core.common.addTerminationCallback
@@ -12,14 +15,48 @@ import msw.server.core.common.runCommand
 import msw.server.core.common.toCommandString
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.world.World
+import msw.server.core.versions.DownloadManager
+import msw.server.core.versions.ManifestCreator
 import msw.server.rpc.instances.Instance
 import msw.server.rpc.instances.InstanceList
 
 class ServerWatcher(
-    private val directory: ServerDirectory,
+    val directory: ServerDirectory,
     private val scope: CoroutineScope
 ) {
     companion object {
+        fun initNew(
+            toplevelScope: CoroutineScope,
+            netScope: CoroutineScope,
+            root: Directory,
+            port: Int,
+            initialVersionId: String
+        ): ServerWatcher {
+            val manifestCreator = ManifestCreator(netScope)
+            val downloadManager = DownloadManager(netScope)
+
+            val initialVersionPath = Path("minecraft_server_$initialVersionId.jar")
+
+            val manifest = manifestCreator.createManifest(initialVersionId)
+            downloadManager.download(manifest, root.toPath().resolve(initialVersionPath))
+
+            val command = buildList {
+                add("java")
+                add("-jar")
+                add("\"$initialVersionPath\"")
+                add("--port")
+                add(port.toString())
+                add("nogui")
+            }
+
+            val process = root.runCommand(command)
+            process.inputStream.transferTo(OutputStream.nullOutputStream()) // discard MC Server output
+            process.waitFor()
+
+            val serverDirectory = ServerDirectory(manifestCreator, downloadManager, root, toplevelScope)
+            return ServerWatcher(serverDirectory, toplevelScope)
+        }
+
         const val ERR_NO_INSTANCE_ON_PORT = "no tracked instance is running on port "
         const val ERR_NO_INSTANCE_ON_WORLD = "no tracked instance is running on world "
         const val STOP_COMMAND = "stop"
@@ -42,18 +79,19 @@ class ServerWatcher(
         }
 
         try {
-            val command = mutableListOf<String>()
-            command.add("java")
-            command.add("-Xms${(config.heapInit ?: 1024L.mebibytes).toCommandString()}")
-            command.add("-Xmx${(config.heapMax ?: 1024L.mebibytes).toCommandString()}")
-            command.add("-jar")
-            command.add("\"${directory.root.toPath().relativize(directory.getVersion(config.versionID))}\"")
-            command.add("--port")
-            command.add(port.toString())
-            command.add("--world")
-            command.add("\"${directory.root.toPath().relativize(world.root.toPath())}\"")
-            if (!config.guiEnabled) {
-                command.add("nogui")
+            val command = buildList {
+                add("java")
+                add("-Xms${(config.heapInit ?: 1024L.mebibytes).toCommandString()}")
+                add("-Xmx${(config.heapMax ?: 1024L.mebibytes).toCommandString()}")
+                add("-jar")
+                add("\"${directory.root.toPath().relativize(directory.getVersion(config.versionID))}\"")
+                add("--port")
+                add(port.toString())
+                add("--world")
+                add("\"${directory.root.toPath().relativize(world.root.toPath())}\"")
+                if (!config.guiEnabled) {
+                    add("nogui")
+                }
             }
 
             launchMutex.withLock {

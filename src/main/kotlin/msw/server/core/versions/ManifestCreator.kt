@@ -4,7 +4,8 @@ import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.JsonPathException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.apache.Apache
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.cio.endpoint
 import io.ktor.client.request.get
 import java.net.URL
 import java.time.OffsetDateTime
@@ -28,7 +29,7 @@ class ManifestCreator(
     cacheRefresh: Long = 12 * 60 * 60 * 1000
 ) {
     companion object {
-        private const val SPAM_PROTECTION_MILLIS = 10L
+        private const val SPAM_PROTECTION_MILLIS = 100L
         private val updateRate = (SPAM_PROTECTION_MILLIS / 10)..SPAM_PROTECTION_MILLIS
         private var spamProtectionTimestamp = System.currentTimeMillis()
 
@@ -45,10 +46,12 @@ class ManifestCreator(
         }
     }
 
-    private val client = HttpClient(Apache) {
+    private val client = HttpClient(CIO) {
         engine {
-            socketTimeout = 20_000
-            connectTimeout = 20_000
+            endpoint {
+                socketTimeout = 20_000
+                connectTimeout = 20_000
+            }
         }
     }
     private val contents = scope.async { readContent() }
@@ -174,10 +177,12 @@ class ManifestCreator(
                 initUrl,
                 "$errorMsg No URL found for: ${constructErrorMsg(id, type, sha1, timeRange, releaseTimeRange)}"
             )
+
             manifests.size > 1 -> throw DownloadException(
                 initUrl,
                 "$errorMsg Multiple URLs found for: ${constructErrorMsg(id, type, sha1, timeRange, releaseTimeRange)}"
             )
+
             else -> manifests.single()
         }
     }

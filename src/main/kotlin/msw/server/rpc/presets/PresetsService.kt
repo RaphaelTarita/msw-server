@@ -1,17 +1,11 @@
 package msw.server.rpc.presets
 
-import io.grpc.StatusRuntimeException
-import kotlinx.serialization.ExperimentalSerializationApi
-import msw.server.core.common.ErrorTransformer
 import msw.server.core.common.StringProperties
 import msw.server.core.common.semanticEquivalence
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.props.ServerProperties
 
-class PresetsService(
-    private val directory: ServerDirectory,
-    private val transformer: ErrorTransformer<StatusRuntimeException>
-) : PresetsGrpcKt.PresetsCoroutineImplBase() {
+class PresetsService(private val directory: ServerDirectory) : PresetsGrpcKt.PresetsCoroutineImplBase() {
     override suspend fun getPresetIDs(request: PresetIDRegex): PresetIDList {
         val ids = directory.presetIDs()
         return PresetIDList {
@@ -28,7 +22,6 @@ class PresetsService(
         return PropertiesString { props = directory.presetByID(request.id) }
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     override suspend fun setPreset(request: IdentifiablePreset): PresetCRUDResponse {
         try {
             val response = if (!directory.presetExists(request.id)) {

@@ -1,11 +1,9 @@
 package msw.server.rpc.versions
 
-import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import msw.server.core.common.ErrorTransformer
 import msw.server.core.common.NoArg
 import msw.server.core.common.ServerResponse
 import msw.server.core.common.comparatorForNested
@@ -15,10 +13,7 @@ import msw.server.core.common.versionComparatorFor
 import msw.server.core.model.ServerDirectory
 import msw.server.core.versions.model.VersionType
 
-class VersionsService(
-    private val directory: ServerDirectory,
-    private val transformer: ErrorTransformer<StatusRuntimeException>
-) : VersionsGrpcKt.VersionsCoroutineImplBase() {
+class VersionsService(private val directory: ServerDirectory) : VersionsGrpcKt.VersionsCoroutineImplBase() {
     override suspend fun listInstalledVersions(@Suppress("UNUSED_PARAMETER") request: NoArg): VersionIDList {
         return VersionIDList {
             ids = directory.serverVersions.keys.toList()

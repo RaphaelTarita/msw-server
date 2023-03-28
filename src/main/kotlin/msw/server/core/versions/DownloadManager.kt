@@ -1,7 +1,7 @@
 package msw.server.core.versions
 
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.apache.Apache
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.client.statement.bodyAsChannel
@@ -29,7 +29,7 @@ class DownloadManager(
         }
     }
 
-    private val client = HttpClient(Apache)
+    private val client = HttpClient(CIO)
 
     private fun List<suspend (Long, Long) -> Unit>.notifyProgress(current: Long, total: Long) {
         for (listener in this) {

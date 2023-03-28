@@ -1,17 +1,12 @@
 package msw.server.rpc.instances
 
-import io.grpc.StatusRuntimeException
-import msw.server.core.common.ErrorTransformer
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.NoArg
 import msw.server.core.common.Port
 import msw.server.core.common.ServerResponse
 import msw.server.core.watcher.ServerWatcher
 
-class InstancesService(
-    private val watcher: ServerWatcher,
-    private val transformer: ErrorTransformer<StatusRuntimeException>
-) : InstancesGrpcKt.InstancesCoroutineImplBase() {
+class InstancesService(private val watcher: ServerWatcher) : InstancesGrpcKt.InstancesCoroutineImplBase() {
     override suspend fun getRunningInstances(@Suppress("UNUSED_PARAMETER") request: NoArg): InstanceList {
         return watcher.getInstances()
     }

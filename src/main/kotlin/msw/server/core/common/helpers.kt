@@ -1,9 +1,6 @@
 package msw.server.core.common
 
 import com.toasttab.protokt.Timestamp
-import io.grpc.MethodDescriptor
-import io.grpc.kotlin.AbstractCoroutineServerImpl
-import io.grpc.kotlin.ServerCalls
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -13,15 +10,12 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.time.OffsetDateTime
-import kotlin.coroutines.CoroutineContext
 import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.StringFormat
 import msw.server.core.versions.DownloadManifest
 import msw.server.core.versions.model.VersionType
@@ -107,7 +101,6 @@ fun Path.sha1(bufferSize: Int = 4096): String {
 
 fun File.sha1(bufferSize: Int = 4096) = toPath().sha1(bufferSize)
 
-@OptIn(ExperimentalSerializationApi::class)
 fun semanticEquivalence(
     lop: String,
     rop: String,
@@ -416,34 +409,6 @@ fun MemoryAmount.toCommandString(): String {
         }
     }"
 }
-
-@Suppress("UNUSED")
-fun <T, U> AbstractCoroutineServerImpl.unary(
-    context: CoroutineContext,
-    descriptor: MethodDescriptor<T, U>,
-    implementation: suspend (request: T) -> U
-) = ServerCalls.unaryServerMethodDefinition(context, descriptor, implementation)
-
-@Suppress("UNUSED")
-fun <T, U> AbstractCoroutineServerImpl.clientStream(
-    context: CoroutineContext,
-    descriptor: MethodDescriptor<T, U>,
-    implementation: suspend (requests: Flow<T>) -> U
-) = ServerCalls.clientStreamingServerMethodDefinition(context, descriptor, implementation)
-
-@Suppress("UNUSED")
-fun <T, U> AbstractCoroutineServerImpl.serverStream(
-    context: CoroutineContext,
-    descriptor: MethodDescriptor<T, U>,
-    implementation: (request: T) -> Flow<U>
-) = ServerCalls.serverStreamingServerMethodDefinition(context, descriptor, implementation)
-
-@Suppress("UNUSED")
-fun <T, U> AbstractCoroutineServerImpl.bidiStream(
-    context: CoroutineContext,
-    descriptor: MethodDescriptor<T, U>,
-    implementation: (requests: Flow<T>) -> Flow<U>
-) = ServerCalls.bidiStreamingServerMethodDefinition(context, descriptor, implementation)
 
 
 

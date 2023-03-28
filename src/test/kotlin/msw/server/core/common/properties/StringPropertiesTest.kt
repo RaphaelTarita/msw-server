@@ -4,7 +4,6 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.spec.style.funSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import msw.server.core.common.KVSeparator
 import msw.server.core.common.Model01
@@ -17,7 +16,6 @@ import msw.server.core.common.ModelMarker
 import msw.server.core.common.PropertiesEscapeModel
 import msw.server.core.common.StringProperties
 
-@OptIn(ExperimentalSerializationApi::class)
 class StringPropertiesTest : FunSpec({
     test("Properties serialization should escape KV separators in keys") {
         val model = PropertiesEscapeModel()

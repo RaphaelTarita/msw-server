@@ -4,11 +4,9 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import kotlin.io.path.nameWithoutExtension
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -33,7 +31,6 @@ import msw.server.core.versions.ManifestCreator
 import msw.server.rpc.versions.VersionDetails
 
 // https://minecraft-de.gamepedia.com/Minecraft-Server#Serverordner
-@OptIn(ExperimentalSerializationApi::class)
 class ServerDirectory internal constructor(
     val manifestCreator: ManifestCreator,
     private val manager: DownloadManager,
@@ -84,11 +81,6 @@ class ServerDirectory internal constructor(
                     pair.first.versionID
                 }
                 .toMutableMap()
-        }
-
-        private fun Path.serverVersionID(): String {
-            return nameWithoutExtension
-                .substringAfter('.', "")
         }
     }
 

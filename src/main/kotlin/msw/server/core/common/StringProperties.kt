@@ -4,7 +4,6 @@ import java.security.MessageDigest
 import kotlin.math.min
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.StringFormat
@@ -16,10 +15,10 @@ private val nonBlankSeparators = setOf('=', ':')
 private val separators = nonBlankSeparators + ' '
 private val commentFilter = "[ \\t\\f]*[#!].*".toRegex()
 
-@ExperimentalSerializationApi
+@OptIn(ExperimentalSerializationApi::class)
 open class OpenProperties(val props: Properties) : SerialFormat by props
 
-@ExperimentalSerializationApi
+@OptIn(ExperimentalSerializationApi::class)
 sealed class StringProperties(internal val config: PropertiesConf) :
     OpenProperties(Properties(config.module)),
     StringFormat {
@@ -86,7 +85,6 @@ sealed class StringProperties(internal val config: PropertiesConf) :
         return begin
     }
 
-    @OptIn(InternalSerializationApi::class)
     override fun <T> decodeFromString(deserializer: DeserializationStrategy<T>, string: String): T {
         val result = mutableMapOf<String, String>()
         for (line in string.logicalLines()) {
@@ -157,10 +155,8 @@ sealed class StringProperties(internal val config: PropertiesConf) :
     }
 }
 
-@ExperimentalSerializationApi
 private class StringPropertiesImpl(conf: PropertiesConf) : StringProperties(conf)
 
-@ExperimentalSerializationApi
 fun StringProperties(
     from: StringProperties = StringProperties,
     builderAction: PropertiesBuilder.() -> Unit
@@ -171,7 +167,6 @@ fun StringProperties(
     return StringPropertiesImpl(conf)
 }
 
-@ExperimentalSerializationApi
 class PropertiesBuilder internal constructor(from: PropertiesConf) {
 
     var lineSeparator: LineSeparator = from.lineSeparator
@@ -197,7 +192,6 @@ class PropertiesBuilder internal constructor(from: PropertiesConf) {
     }
 }
 
-@ExperimentalSerializationApi
 internal data class PropertiesConf(
     val lineSeparator: LineSeparator = LineSeparator.LF,
     val kvSeparator: KVSeparator = KVSeparator.EQUALS,
@@ -206,7 +200,7 @@ internal data class PropertiesConf(
     val commentChar: CommentChar = CommentChar.HASHTAG,
     val spacesBeforeCommentChar: Int = 0,
     val spacesAfterCommentChar: Int = 1,
-    val module: SerializersModule = EmptySerializersModule
+    val module: SerializersModule = EmptySerializersModule()
 )
 
 enum class LineSeparator(val s: String) {
@@ -252,7 +246,6 @@ private fun String.logicalLines(preserveComments: Boolean = false): List<String>
     return result
 }
 
-@ExperimentalSerializationApi
 private fun String.indexedComments(config: PropertiesConf): Map<Int, String> {
     val res = mutableMapOf<Int, String>()
     val llines = logicalLines(true).toMutableList()

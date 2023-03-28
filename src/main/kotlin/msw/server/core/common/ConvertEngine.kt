@@ -7,8 +7,7 @@ import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.internal.NamedValueDecoder
 
-@ExperimentalSerializationApi
-@InternalSerializationApi
+@OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
 class ConvertEngine(private val map: Map<String, String>, descriptor: SerialDescriptor) : NamedValueDecoder() {
     companion object {
         private fun String.internalToBoolean(): Boolean {

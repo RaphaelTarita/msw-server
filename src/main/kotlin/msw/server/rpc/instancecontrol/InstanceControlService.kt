@@ -1,52 +1,34 @@
 package msw.server.rpc.instancecontrol
 
-import io.grpc.ServerServiceDefinition
-import io.grpc.StatusRuntimeException
-import io.grpc.kotlin.AbstractCoroutineServerImpl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
-import msw.server.core.common.ErrorTransformer
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.Port
 import msw.server.core.common.ServerResponse
-import msw.server.core.common.serverStream
 import msw.server.core.common.truncate
-import msw.server.core.common.unary
 import msw.server.core.watcher.ServerWatcher
 
-class InstanceControlService(
-    private val watcher: ServerWatcher,
-    private val transformer: ErrorTransformer<StatusRuntimeException>
-) : AbstractCoroutineServerImpl() {
+class InstanceControlService(private val watcher: ServerWatcher) : InstanceControlGrpcKt.InstanceControlCoroutineImplBase() {
     companion object {
         private const val COMMAND_MAXLEN = 50
     }
 
-    override fun bindService(): ServerServiceDefinition =
-        ServerServiceDefinition.builder(InstanceControlGrpc.getServiceDescriptor())
-            .addMethod(unary(context, InstanceControlGrpc.getGetPortForWorldMethod(), transformer.pack1(::getPortForWorld)))
-            .addMethod(unary(context, InstanceControlGrpc.getGetWorldOnPortMethod(), transformer.pack1(::getWorldOnPort)))
-            .addMethod(unary(context, InstanceControlGrpc.getGetConfigMethod(), transformer.pack1(::getConfig)))
-            .addMethod(serverStream(context, InstanceControlGrpc.getGetLogMethod(), transformer.pack1(::getLog)))
-            .addMethod(unary(context, InstanceControlGrpc.getSendCommandMethod(), transformer.pack1(::sendCommand)))
-            .build()
-
-    private fun getPortForWorld(world: World): Port {
-        return Port { num = watcher.portForWorld(world.name) }
+    override suspend fun getPortForWorld(request: World): Port {
+        return Port { num = watcher.portForWorld(request.name) }
     }
 
-    private fun getWorldOnPort(port: Port): World {
-        return World { name = watcher.worldOnPort(port.num).name }
+    override suspend fun getWorldOnPort(request: Port): World {
+        return World { name = watcher.worldOnPort(request.num).name }
     }
 
-    private fun getConfig(port: Port): InstanceConfiguration {
-        return watcher.configOnPort(port.num)
+    override suspend fun getConfig(request: Port): InstanceConfiguration {
+        return watcher.configOnPort(request.num)
     }
 
-    private fun getLog(port: Port): Flow<LogLine> {
-        val reader = watcher.instanceOnPort(port.num).inputStream.bufferedReader()
+    override fun getLog(request: Port): Flow<LogLine> {
+        val reader = watcher.instanceOnPort(request.num).inputStream.bufferedReader()
         return flow {
             var line = withContext(Dispatchers.IO) { reader.readLine() }
             while (line != null) {
@@ -56,21 +38,21 @@ class InstanceControlService(
         }
     }
 
-    private fun sendCommand(commandRequest: CommandRequest): ServerResponse {
+    override suspend fun sendCommand(request: CommandRequest): ServerResponse {
         var world: String? = null
-        val truncated = commandRequest.cmd.truncate(COMMAND_MAXLEN)
+        val truncated = request.cmd.truncate(COMMAND_MAXLEN)
         return try {
-            world = watcher.worldOnPort(commandRequest.port).name
-            watcher.sendCommand(commandRequest.port, commandRequest.cmd)
+            world = watcher.worldOnPort(request.port).name
+            watcher.sendCommand(request.port, request.cmd)
             ServerResponse {
                 successful = true
-                response = "Command '$truncated' was executed on $world:${commandRequest.port}"
+                response = "Command '$truncated' was executed on $world:${request.port}"
             }
         } catch (exc: Exception) {
             ServerResponse {
                 successful = false
                 response =
-                    "Failed to execute commmand '$truncated' on instance ${world ?: '?'}:${commandRequest.port}. Reason: ${exc.message}"
+                    "Failed to execute commmand '$truncated' on instance ${world ?: '?'}:${request.port}. Reason: ${exc.message}"
             }
         }
     }

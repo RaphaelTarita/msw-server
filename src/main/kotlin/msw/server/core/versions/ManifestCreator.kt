@@ -1,5 +1,6 @@
 package msw.server.core.versions
 
+import com.github.ajalt.mordant.animation.progressAnimation
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.JsonPathException
 import io.ktor.client.HttpClient
@@ -9,8 +10,6 @@ import io.ktor.client.engine.cio.endpoint
 import io.ktor.client.request.get
 import java.net.URL
 import java.time.OffsetDateTime
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -19,12 +18,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import msw.server.core.common.ExpirableCache
+import msw.server.core.common.GlobalInjections
 import msw.server.core.common.nullIfError
+import msw.server.core.common.readyMsg
 import msw.server.core.versions.model.VersionType
 import msw.server.core.versions.model.Versions
 
+context(GlobalInjections)
 class ManifestCreator(
-    private val scope: CoroutineScope,
     private val initUrl: URL = URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"),
     cacheRefresh: Long = 12 * 60 * 60 * 1000
 ) {
@@ -41,8 +42,8 @@ class ManifestCreator(
 
         private fun stringify(range: ClosedRange<OffsetDateTime>) = "${range.start} - ${range.endInclusive}"
 
-        private fun parse(contents: Deferred<String>): Versions {
-            return Json.decodeFromString(runBlocking { contents.await() })
+        private fun parse(contents: String): Versions {
+            return Json.decodeFromString(contents)
         }
     }
 
@@ -54,8 +55,22 @@ class ManifestCreator(
             }
         }
     }
-    private val contents = scope.async { readContent() }
-    private val cache = ExpirableCache<URL, DownloadManifest>(cacheRefresh)
+
+    private val root = bootstrap()
+    private val cache = ExpirableCache<URL, DownloadManifest?>(cacheRefresh)
+
+    init {
+        terminal.readyMsg("Manifest Service")
+    }
+
+    private fun bootstrap(): Versions {
+        terminal.info("fetching versions root document")
+        val rootDoc = runBlocking {
+            parse(readContent(initUrl))
+        }
+        terminal.info("root versions document fetched, ${rootDoc.versions.size} versions found")
+        return rootDoc
+    }
 
     private fun constructErrorMsg(
         id: String,
@@ -88,7 +103,7 @@ class ManifestCreator(
         }
     }
 
-    private suspend fun readContent(url: URL = initUrl): String {
+    private suspend fun readContent(url: URL): String {
         while (System.currentTimeMillis() - spamProtectionTimestamp < SPAM_PROTECTION_MILLIS) {
             delay(updateRate.random())
         }
@@ -104,8 +119,8 @@ class ManifestCreator(
         time: OffsetDateTime,
         releaseTime: OffsetDateTime
     ): DownloadManifest? {
-        val res = nullIfError<JsonPathException, DownloadManifest?> {
-            cache.suspendingRunOrGet(documentURL) {
+        val res = cache.runOrGet(documentURL) {
+            nullIfError<JsonPathException, DownloadManifest> {
                 val ctx = JsonPath.parse(readContent(it))
                 DownloadManifest(
                     id,
@@ -128,29 +143,50 @@ class ManifestCreator(
         type: VersionType = VersionType.ALL,
         sha1: String = "",
         timeRange: ClosedRange<OffsetDateTime> = OffsetDateTime.MIN..OffsetDateTime.MAX,
-        releaseTimeRange: ClosedRange<OffsetDateTime> = OffsetDateTime.MIN..OffsetDateTime.MAX
+        releaseTimeRange: ClosedRange<OffsetDateTime> = OffsetDateTime.MIN..OffsetDateTime.MAX,
     ): List<DownloadManifest> {
-        val manifests = parsed.versions
+        val filtered = parsed.versions
             .asSequence()
             .filter { id.isBlank() || it.id == id }
             .filter { type == VersionType.ALL || type == it.type }
             .filter { it.time in timeRange }
             .filter { it.releaseTime in releaseTimeRange }
             .toList()
-            .map {
-                scope.async {
-                    findUrlInDocument(
-                        it.url,
-                        it.id,
-                        sha1,
-                        it.type,
-                        it.time,
-                        it.releaseTime
-                    )
-                }
-            }
 
-        return runBlocking { manifests.mapNotNull { it.await() } }
+        val anim = terminal.progressAnimation {
+            text("fetching ${filtered.size} manifests (${cache.validCount()} in cache)")
+            percentage()
+            progressBar(
+                pendingChar = "-",
+                separatorChar = ">",
+                completeChar = "-"
+            )
+            completed()
+            timeRemaining()
+        }
+        anim.updateTotal(filtered.size.toLong())
+        anim.start()
+
+        val manifests = filtered.map {
+            netScope.async {
+                findUrlInDocument(
+                    it.url,
+                    it.id,
+                    sha1,
+                    it.type,
+                    it.time,
+                    it.releaseTime
+                ).also { anim.advance() }
+            }
+        }
+
+        return runBlocking {
+            manifests.mapNotNull { it.await() }.also {
+                anim.update()
+                anim.stop()
+                anim.clear()
+            }
+        }
     }
 
     fun createManifests(
@@ -160,8 +196,7 @@ class ManifestCreator(
         timeRange: ClosedRange<OffsetDateTime> = OffsetDateTime.MIN..OffsetDateTime.MAX,
         releaseTimeRange: ClosedRange<OffsetDateTime> = OffsetDateTime.MIN..OffsetDateTime.MAX
     ): List<DownloadManifest> = internalCreate(
-        parse(contents),
-        id, type, sha1, timeRange, releaseTimeRange
+        root, id, type, sha1, timeRange, releaseTimeRange
     )
 
     fun createManifest(
@@ -188,14 +223,12 @@ class ManifestCreator(
     }
 
     fun latestRelease(): DownloadManifest {
-        val parsed = parse(contents)
-        return internalCreate(parsed, parsed.latest.release, VersionType.RELEASE).single()
+        return internalCreate(root, root.latest.release, VersionType.RELEASE).single()
     }
 
     fun latestSnapshot(): DownloadManifest {
-        val parsed = parse(contents)
-        return internalCreate(parsed, parsed.latest.snapshot, VersionType.SNAPSHOT).single()
+        return internalCreate(root, root.latest.snapshot, VersionType.SNAPSHOT).single()
     }
 
-    fun rootDocument() = parse(contents)
+    fun rootDocument() = root
 }

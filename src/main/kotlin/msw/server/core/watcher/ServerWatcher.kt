@@ -3,14 +3,15 @@ package msw.server.core.watcher
 import com.google.common.collect.HashBiMap
 import java.io.OutputStream
 import kotlin.io.path.Path
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import msw.server.core.common.Directory
+import msw.server.core.common.GlobalInjections
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.MemoryAmount
 import msw.server.core.common.addTerminationCallback
 import msw.server.core.common.mebibytes
+import msw.server.core.common.readyMsg
 import msw.server.core.common.runCommand
 import msw.server.core.common.toCommandString
 import msw.server.core.model.ServerDirectory
@@ -20,24 +21,27 @@ import msw.server.core.versions.ManifestCreator
 import msw.server.rpc.instances.Instance
 import msw.server.rpc.instances.InstanceList
 
+context(GlobalInjections)
 class ServerWatcher(
-    val directory: ServerDirectory,
-    private val scope: CoroutineScope
+    val directory: ServerDirectory
 ) {
     companion object {
+        context(GlobalInjections)
         fun initNew(
-            toplevelScope: CoroutineScope,
-            netScope: CoroutineScope,
             root: Directory,
             port: Int,
             initialVersionId: String? = null
         ): ServerWatcher {
-            val manifestCreator = ManifestCreator(netScope)
-            val downloadManager = DownloadManager(netScope)
-
-            val initialVersionPath = Path("minecraft_server_$initialVersionId.jar")
-
+            val manifestCreator = ManifestCreator()
+            val downloadManager = DownloadManager()
             val manifest = if (initialVersionId != null) manifestCreator.createManifest(initialVersionId) else manifestCreator.latestRelease()
+            terminal.info("initializing new server installation...")
+            terminal.info("- root dir: ${root.absolutePath}")
+            terminal.info("- port: $port")
+            terminal.info("- initial version: ${manifest.versionID}")
+
+            val initialVersionPath = Path("minecraft_server_${manifest.versionID}.jar")
+            terminal.info("downloading: $initialVersionPath")
             downloadManager.download(manifest, root.toPath().resolve(initialVersionPath))
 
             val command = buildList {
@@ -49,12 +53,15 @@ class ServerWatcher(
                 add("nogui")
             }
 
+            terminal.info("starting server to generate server files...")
+            terminal.info("- command: ${command.joinToString(" ")}")
             val process = root.runCommand(command)
             process.inputStream.transferTo(OutputStream.nullOutputStream()) // discard MC Server output
             process.waitFor()
+            terminal.info("done.")
 
-            val serverDirectory = ServerDirectory(manifestCreator, downloadManager, root, toplevelScope)
-            return ServerWatcher(serverDirectory, toplevelScope)
+            val serverDirectory = ServerDirectory(manifestCreator, downloadManager, root)
+            return ServerWatcher(serverDirectory)
         }
 
         const val ERR_NO_INSTANCE_ON_PORT = "no tracked instance is running on port "
@@ -66,6 +73,10 @@ class ServerWatcher(
     private val launchMutex = Mutex()
     private val instances = mutableMapOf<Int, Pair<Process, InstanceConfiguration>>()
     private val portMappings = HashBiMap.create<Int, World>()
+
+    init {
+        terminal.readyMsg("Watcher")
+    }
 
     suspend fun launchInstance(port: Int, world: World, config: InstanceConfiguration) {
         reserveMutex.withLock {
@@ -98,7 +109,7 @@ class ServerWatcher(
                 directory.activatePreset(config.presetID)
                 instances[port] = directory.root
                     .runCommand(command)
-                    .addTerminationCallback(scope) {
+                    .addTerminationCallback(toplevelScope) {
                         portMappings.remove(port)
                         instances.remove(port)
                     } to config

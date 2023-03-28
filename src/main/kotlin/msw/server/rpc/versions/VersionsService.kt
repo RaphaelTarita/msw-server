@@ -4,16 +4,23 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import msw.server.core.common.GlobalInjections
 import msw.server.core.common.NoArg
 import msw.server.core.common.ServerResponse
 import msw.server.core.common.comparatorForNested
 import msw.server.core.common.invertInsertionPoint
+import msw.server.core.common.readyMsg
 import msw.server.core.common.toVersionDetails
 import msw.server.core.common.versionComparatorFor
 import msw.server.core.model.ServerDirectory
 import msw.server.core.versions.model.VersionType
 
+context(GlobalInjections)
 class VersionsService(private val directory: ServerDirectory) : VersionsGrpcKt.VersionsCoroutineImplBase() {
+    init {
+        terminal.readyMsg("gRPC Service [VersionsService]:")
+    }
+
     override suspend fun listInstalledVersions(@Suppress("UNUSED_PARAMETER") request: NoArg): VersionIDList {
         return VersionIDList {
             ids = directory.serverVersions.keys.toList()

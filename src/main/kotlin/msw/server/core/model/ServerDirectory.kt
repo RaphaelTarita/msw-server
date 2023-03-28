@@ -4,19 +4,21 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import msw.server.core.common.Directory
+import msw.server.core.common.GlobalInjections
 import msw.server.core.common.JSONFile
+import msw.server.core.common.SingletonInjectionImpl.terminal
 import msw.server.core.common.StringProperties
 import msw.server.core.common.composePath
 import msw.server.core.common.existsOrNull
 import msw.server.core.common.nullIfError
 import msw.server.core.common.readFromPath
+import msw.server.core.common.readyMsg
 import msw.server.core.common.renameTo
 import msw.server.core.common.sha1
 import msw.server.core.common.toDirectory
@@ -31,16 +33,27 @@ import msw.server.core.versions.ManifestCreator
 import msw.server.rpc.versions.VersionDetails
 
 // https://minecraft-de.gamepedia.com/Minecraft-Server#Serverordner
+context(GlobalInjections)
 class ServerDirectory internal constructor(
     val manifestCreator: ManifestCreator,
     private val manager: DownloadManager,
     val root: Directory,
-    private val toplevelScope: CoroutineScope,
     private val propertiesCodec: StringProperties = StringProperties.Default
 ) {
     companion object {
+        context(GlobalInjections)
+        fun initFor(
+            root: Directory,
+            propertiesCodec: StringProperties = StringProperties.Default
+        ): ServerDirectory {
+            terminal.info("booting MSW in directory ${root.absolutePath}")
+            return ServerDirectory(ManifestCreator(), DownloadManager(), root, propertiesCodec)
+        }
+
+        context(GlobalInjections)
         private fun scanForWorlds(dir: Directory): List<World> {
-            val worldDirectories = dir.listFiles { file: File ->
+            terminal.info("scanning for existing worlds...")
+            return dir.listFiles { file: File ->
                 if (!file.isDirectory) return@listFiles false
 
                 when (file.name) {
@@ -48,16 +61,14 @@ class ServerDirectory internal constructor(
                 }
 
                 return@listFiles file.list()?.contains("level.dat") ?: false
-            }!!
-
-            val res = mutableListOf<World>()
-            for (c in worldDirectories) {
-                res.add(World(c.toDirectory()))
+            }.map {
+                terminal.info("- World found: ${it.name}")
+                World(it.toDirectory())
             }
-            return res
         }
 
         private fun scanForVersions(dir: Directory, creator: ManifestCreator): MutableMap<String, Pair<VersionDetails, Path>> {
+            terminal.info("scanning for existing server versions...")
             return dir.listFiles { file: File -> file.extension == "jar" }!!
                 .map { it.toPath() }
                 .map { it.sha1() to it }
@@ -78,7 +89,9 @@ class ServerDirectory internal constructor(
                     pair.first!!.toVersionDetails() to pair.second
                 }
                 .mapKeys { (_, pair) ->
-                    pair.first.versionID
+                    val vId = pair.first.versionID
+                    terminal.info("- Server Version found: $vId")
+                    vId
                 }
                 .toMutableMap()
         }
@@ -102,14 +115,8 @@ class ServerDirectory internal constructor(
 
     init {
         addPreset("default", ServerProperties(), true)
+        terminal.readyMsg("Directory")
     }
-
-    constructor(
-        root: Directory,
-        toplevelScope: CoroutineScope,
-        netScope: CoroutineScope,
-        propertiesCodec: StringProperties = StringProperties.Default,
-    ) : this(ManifestCreator(netScope), DownloadManager(netScope), root, toplevelScope, propertiesCodec)
 
     fun presetIDs(): List<String> {
         return presets.listFiles()!!.map { it.nameWithoutExtension }

@@ -1,12 +1,19 @@
 package msw.server.rpc.instances
 
+import msw.server.core.common.GlobalInjections
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.NoArg
 import msw.server.core.common.Port
 import msw.server.core.common.ServerResponse
+import msw.server.core.common.readyMsg
 import msw.server.core.watcher.ServerWatcher
 
+context(GlobalInjections)
 class InstancesService(private val watcher: ServerWatcher) : InstancesGrpcKt.InstancesCoroutineImplBase() {
+    init {
+        terminal.readyMsg("gRPC Service [InstancesService]:")
+    }
+
     override suspend fun getRunningInstances(@Suppress("UNUSED_PARAMETER") request: NoArg): InstanceList {
         return watcher.getInstances()
     }

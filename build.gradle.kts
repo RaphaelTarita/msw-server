@@ -18,6 +18,7 @@ val kotest_version = "5.5.5"
 val kotest_allure_version = "1.2.0"
 val kotest_pitest_version = "1.1.0"
 val knbt_version = "0.11.3"
+val mordant_version = "2.0.0-beta12"
 
 plugins {
     application
@@ -57,6 +58,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kxs_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-properties:$kxs_version")
     implementation("net.benwoodworth.knbt:knbt:$knbt_version")
+    implementation("com.github.ajalt.mordant:mordant:$mordant_version")
 
     // testing
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotest_version")
@@ -64,6 +66,10 @@ dependencies {
     testImplementation("io.kotest:kotest-property-jvm:$kotest_version")
     testImplementation("io.kotest.extensions:kotest-extensions-allure:$kotest_allure_version")
     testImplementation("io.kotest.extensions:kotest-extensions-pitest:$kotest_pitest_version")
+}
+
+application {
+    mainClass.set("msw.server.core.MainKt")
 }
 
 protokt {
@@ -92,6 +98,7 @@ tasks.withType<JavaCompile>().all {
 
 tasks.withType<KotlinCompile>().all {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
+    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
 }
 
 java {

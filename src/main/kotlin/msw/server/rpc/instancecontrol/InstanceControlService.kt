@@ -4,15 +4,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import msw.server.core.common.GlobalInjections
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.Port
 import msw.server.core.common.ServerResponse
+import msw.server.core.common.readyMsg
 import msw.server.core.common.truncate
 import msw.server.core.watcher.ServerWatcher
 
+context(GlobalInjections)
 class InstanceControlService(private val watcher: ServerWatcher) : InstanceControlGrpcKt.InstanceControlCoroutineImplBase() {
     companion object {
         private const val COMMAND_MAXLEN = 50
+    }
+
+    init {
+        terminal.readyMsg("gRPC Service [InstanceControlService]:")
     }
 
     override suspend fun getPortForWorld(request: World): Port {

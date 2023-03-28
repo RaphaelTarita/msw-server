@@ -1,5 +1,7 @@
 package msw.server.core.common
 
+import com.github.ajalt.mordant.rendering.TextColors
+import com.github.ajalt.mordant.terminal.Terminal
 import com.toasttab.protokt.Timestamp
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -410,6 +412,10 @@ fun MemoryAmount.toCommandString(): String {
     }"
 }
 
+
+fun Terminal.readyMsg(component: String) {
+    println(TextColors.green("✓ $component initialized and ready."))
+}
 
 
 

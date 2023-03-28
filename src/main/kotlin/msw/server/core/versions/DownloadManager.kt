@@ -12,15 +12,16 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 import kotlin.math.min
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import msw.server.core.common.GlobalInjections
 import msw.server.core.common.coerceToInt
+import msw.server.core.common.readyMsg
 import msw.server.core.common.toHexString
 
+context(GlobalInjections)
 class DownloadManager(
-    private val scope: CoroutineScope,
     private val bufferSize: Int = 4096
 ) {
     companion object {
@@ -31,9 +32,13 @@ class DownloadManager(
 
     private val client = HttpClient(CIO)
 
+    init {
+        terminal.readyMsg("Download Service")
+    }
+
     private fun List<suspend (Long, Long) -> Unit>.notifyProgress(current: Long, total: Long) {
         for (listener in this) {
-            scope.launch { listener(current, total) }
+            netScope.launch { listener(current, total) }
         }
     }
 
@@ -114,7 +119,7 @@ class DownloadManager(
             if (available > 0) {
                 val significant = buf.sliceArray(0 until available)
                 runBlocking { hashJob?.join() }
-                hashJob = scope.launch { md.update(significant) }
+                hashJob = netScope.launch { md.update(significant) }
                 writer.write(significant)
                 progress += available
                 if (count++ % internalUpdateRate == 0L) {

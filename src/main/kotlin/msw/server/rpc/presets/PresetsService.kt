@@ -1,11 +1,18 @@
 package msw.server.rpc.presets
 
+import msw.server.core.common.GlobalInjections
 import msw.server.core.common.StringProperties
+import msw.server.core.common.readyMsg
 import msw.server.core.common.semanticEquivalence
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.props.ServerProperties
 
+context(GlobalInjections)
 class PresetsService(private val directory: ServerDirectory) : PresetsGrpcKt.PresetsCoroutineImplBase() {
+    init {
+        terminal.readyMsg("gRPC Service [PresetsService]:")
+    }
+
     override suspend fun getPresetIDs(request: PresetIDRegex): PresetIDList {
         val ids = directory.presetIDs()
         return PresetIDList {

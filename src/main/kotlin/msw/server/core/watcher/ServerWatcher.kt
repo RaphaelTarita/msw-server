@@ -3,6 +3,7 @@ package msw.server.core.watcher
 import com.google.common.collect.HashBiMap
 import java.io.OutputStream
 import kotlin.io.path.Path
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import msw.server.core.common.Directory
@@ -42,7 +43,9 @@ class ServerWatcher(
 
             val initialVersionPath = Path("minecraft_server_${manifest.versionID}.jar")
             terminal.info("downloading: $initialVersionPath")
-            downloadManager.download(manifest, root.toPath().resolve(initialVersionPath))
+            runBlocking {
+                downloadManager.download(manifest, root.toPath().resolve(initialVersionPath))
+            }
 
             val command = buildList {
                 add("java")

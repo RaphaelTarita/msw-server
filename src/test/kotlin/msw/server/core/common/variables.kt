@@ -4,8 +4,12 @@ import kotlin.random.Random
 
 val fixedSeedRandom = Random(1234)
 
-const val exists = "./src/test/resources/DirectoryTest"
-const val existsNot = "./src/test/resources/NonExistent"
-const val create = "./src/test/resources/Create"
+const val parentDir = "./src/test/resources"
+const val existsName = "DirectoryTest"
+const val exists = "$parentDir/$existsName"
+const val existsNotName = "NonExistent"
+const val existsNot = "$parentDir/$existsNotName"
+const val createName = "Create"
+const val create = "$parentDir/$createName"
 const val alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 val escapeThese = charArrayOf('~', '/', '+', '-')

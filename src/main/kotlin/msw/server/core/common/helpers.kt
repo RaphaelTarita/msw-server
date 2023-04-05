@@ -4,12 +4,10 @@ import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.terminal.Terminal
 import com.toasttab.protokt.Timestamp
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.io.IOException
 import java.io.ObjectOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.security.MessageDigest
 import java.time.OffsetDateTime
 import kotlin.math.min
@@ -31,20 +29,8 @@ fun Long.coerceToInt(): Int {
     return min(this, Int.MAX_VALUE.toLong()).toInt()
 }
 
-fun sign(i: Int): Int {
-    return if (i > 0) 1 else if (i < 0) -1 else 0
-}
-
-fun sign(l: Long): Int {
-    return if (l > 0) 1 else if (l < 0) -1 else 0
-}
-
 fun invertInsertionPoint(inverted: Int): Int {
     return -(inverted + 1)
-}
-
-fun String.isNumeric(): Boolean {
-    return toIntOrNull() != null
 }
 
 fun String.truncate(maxlen: Int, suffix: String = "..."): String {
@@ -52,16 +38,8 @@ fun String.truncate(maxlen: Int, suffix: String = "..."): String {
     return if (length < internalMaxlen) this else substring(0, internalMaxlen) + suffix
 }
 
-fun composePath(root: Path, child: Path): Path {
-    return root.resolve(child)
-}
-
 fun composePath(root: Path, child: String): Path {
     return root.resolve(child)
-}
-
-fun composePath(root: Directory, child: Path): Path {
-    return composePath(root.toPath(), child)
 }
 
 fun composePath(root: Directory, child: String): Path {
@@ -70,14 +48,6 @@ fun composePath(root: Directory, child: String): Path {
 
 fun readFromPath(path: Path): String {
     return String(Files.readAllBytes(path))
-}
-
-fun readFromPath(path: String): String {
-    return readFromPath(Paths.get(path))
-}
-
-fun readFromFile(location: File): String {
-    return readFromPath(location.toPath())
 }
 
 fun Path.renameTo(new: String): Path {
@@ -100,8 +70,6 @@ fun Path.sha1(bufferSize: Int = 4096): String {
     } while (amount >= 0)
     return md.digest().toHexString()
 }
-
-fun File.sha1(bufferSize: Int = 4096) = toPath().sha1(bufferSize)
 
 fun semanticEquivalence(
     lop: String,
@@ -128,10 +96,6 @@ inline fun <reified E : Throwable, R> nullIfError(block: () -> R): R? {
     }
 }
 
-fun File.existsOrNull(): File? {
-    return if (exists()) this else null
-}
-
 fun Path.existsOrNull(): Path? {
     return if (Files.exists(this)) this else null
 }
@@ -144,64 +108,8 @@ fun String.replaceMultiple(map: Map<String, String>, ignoreCase: Boolean = false
     return ret
 }
 
-fun String.replaceMultiple(vararg entries: Pair<String, String>, ignoreCase: Boolean = false): String {
-    return replaceMultiple(mapOf(*entries), ignoreCase)
-}
-
 fun String.escape(vararg charsToEscape: Char, ignoreCase: Boolean = false): String {
     return replaceMultiple(charsToEscape.associate { it.toString() to "\\" + it }, ignoreCase)
-}
-
-fun String.unescape(vararg charsToUnescape: Char, ignoreCase: Boolean = false): String {
-    return replaceMultiple(charsToUnescape.associate { "\\" + it to it.toString() }, ignoreCase)
-}
-
-fun <K, V, U> errorJoin(first: Map<K, V>, second: Map<K, U>): Map<K, Pair<V, U>> {
-    require(first.keys == second.keys) {
-        "attempted to merge two maps with different key sets"
-    }
-    return innerJoin(first, second)
-}
-
-fun <K, V, U> innerJoin(first: Map<K, V>, second: Map<K, U>): Map<K, Pair<V, U>> {
-    val result = mutableMapOf<K, Pair<V, U>>()
-    for ((key, firstValue) in first) {
-        val secondValue = second[key]
-        if (secondValue != null) {
-            result[key] = firstValue to secondValue
-        }
-    }
-    return result
-}
-
-fun <K, V, U> leftOuterJoin(first: Map<K, V>, second: Map<K, U>): Map<K, Pair<V, U?>> {
-    val result = mutableMapOf<K, Pair<V, U?>>()
-    for ((key, firstValue) in first) {
-        result[key] = firstValue to second[key]
-    }
-    return result
-}
-
-fun <K, V, U> rightOuterJoin(first: Map<K, V>, second: Map<K, U>): Map<K, Pair<V?, U>> {
-    val result = mutableMapOf<K, Pair<V?, U>>()
-    for ((key, secondValue) in second) {
-        result[key] = first[key] to secondValue
-    }
-    return result
-}
-
-fun <K, V, U> fullOuterJoin(first: Map<K, V>, second: Map<K, U>): Map<K, Pair<V?, U?>> {
-    val result = mutableMapOf<K, Pair<V?, U?>>()
-    val secondMutable = second.toMutableMap()
-    for ((key, value) in first) {
-        result[key] = value to secondMutable.remove(key)
-    }
-
-    for ((key, value) in secondMutable) {
-        result[key] = null to value
-    }
-
-    return result
 }
 
 fun <K, V, R> Map<K, V>.ifContainsKey(key: K, action: (Pair<K, V>) -> R): R? {
@@ -209,18 +117,6 @@ fun <K, V, R> Map<K, V>.ifContainsKey(key: K, action: (Pair<K, V>) -> R): R? {
         action(key to this.getValue(key))
     } else {
         null
-    }
-}
-
-fun <K, V, R> Map<K, V>.ifContainsValue(value: V, action: (Pair<K, V>) -> R): List<R> {
-    return if (containsValue(value)) {
-        val list = mutableListOf<R>()
-        filterValues { it == value }.forEach {
-            list.add(action(it.toPair()))
-        }
-        list
-    } else {
-        emptyList()
     }
 }
 
@@ -330,27 +226,6 @@ fun Directory.runCommand(command: List<String>): Process {
     }
 }
 
-fun Directory.runCommand(command: String): Process = runCommand(command.commandParts())
-
-fun String.commandParts(): List<String> {
-    if (isEmpty()) return emptyList()
-    var remaining = this
-    val res = mutableListOf<String>()
-    val space = "\\s".toRegex()
-    val quote = "[\"']".toRegex()
-
-    while (remaining.isNotEmpty()) {
-        var candidate = remaining.substring(0, remaining.indexOf(space, notFound = remaining.length))
-        if (candidate.contains(quote)) {
-            val strippedRemaining = remaining.removePrefix(candidate)
-            candidate += strippedRemaining.substring(0, strippedRemaining.indexOf(quote) + 1)
-        }
-        res.add(candidate)
-        remaining = remaining.removePrefix(candidate).trimStart()
-    }
-    return res
-}
-
 fun Process.addTerminationCallback(scope: CoroutineScope, callback: Process.() -> Unit): Process {
     try {
         exitValue()
@@ -366,34 +241,24 @@ fun Process.addTerminationCallback(scope: CoroutineScope, callback: Process.() -
     return this
 }
 
-fun String.indexOf(regex: Regex, startIndex: Int = 0, notFound: Int = 0): Int {
-    return regex.find(this.substring(startIndex))?.range?.start ?: notFound
-}
-
-fun hashCode(vararg vals: Any?, prime: Int = 31): Int {
-    var res = 0
-    for (v in vals) {
-        res += v.hashCode()
-        res *= prime
-    }
-    return res
-}
-
 val Long.bytes: MemoryAmount
     get() = MemoryAmount {
         amount = this@bytes
         unit = MemoryUnit.BYTES
     }
+
 val Long.kibibytes: MemoryAmount
     get() = MemoryAmount {
         amount = this@kibibytes
         unit = MemoryUnit.KIBIBYTES
     }
+
 val Long.mebibytes: MemoryAmount
     get() = MemoryAmount {
         amount = this@mebibytes
         unit = MemoryUnit.MEBIBYTES
     }
+
 val Long.gibibytes: MemoryAmount
     get() = MemoryAmount {
         amount = this@gibibytes

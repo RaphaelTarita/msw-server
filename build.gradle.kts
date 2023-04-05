@@ -16,7 +16,7 @@ val grpc_version = "1.3.0"
 val grpcnetty_version = "1.54.0"
 val kotest_version = "5.5.5"
 val kotest_allure_version = "1.2.0"
-val kotest_pitest_version = "1.1.0"
+val kotest_pitest_version = "1.2.0"
 val knbt_version = "0.11.3"
 val mordant_version = "2.0.0-beta12"
 

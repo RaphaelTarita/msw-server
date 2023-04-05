@@ -222,6 +222,22 @@ class ManifestCreator(
         }
     }
 
+    fun createManifestOrNull(
+        id: String = "",
+        type: VersionType = VersionType.ALL,
+        sha1: String = "",
+        timeRange: ClosedRange<OffsetDateTime> = OffsetDateTime.MIN..OffsetDateTime.MAX,
+        releaseTimeRange: ClosedRange<OffsetDateTime> = OffsetDateTime.MIN..OffsetDateTime.MAX
+    ): DownloadManifest? = nullIfError<DownloadException, DownloadManifest> {
+        createManifest(
+            id,
+            type,
+            sha1,
+            timeRange,
+            releaseTimeRange
+        )
+    }
+
     fun latestRelease(): DownloadManifest {
         return internalCreate(root, root.latest.release, VersionType.RELEASE).single()
     }

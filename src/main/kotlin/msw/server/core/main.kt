@@ -2,9 +2,12 @@ package msw.server.core
 
 import com.github.ajalt.mordant.rendering.TextColors
 import io.grpc.ServerBuilder
+import kotlin.io.path.Path
+import kotlin.io.path.extension
 import kotlin.io.path.listDirectoryEntries
-import msw.server.core.common.Directory
+import kotlin.io.path.name
 import msw.server.core.common.SingletonInjectionImpl
+import msw.server.core.common.directory
 import msw.server.core.common.existsOrNull
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.props.ServerProperties
@@ -15,12 +18,10 @@ import msw.server.rpc.presets.PresetsService
 import msw.server.rpc.versions.VersionsService
 
 fun main() = with(SingletonInjectionImpl) {
-    val root = Directory("./minecraft_server", create = true)
-    val watcher = if (root.toPath()
-            .existsOrNull()
+    val root = directory(Path("./minecraft_server"), create = true)
+    val watcher = if (root.existsOrNull()
             ?.listDirectoryEntries()
-            ?.map { it.fileName.toString() }
-            ?.none { "server" in it && it.endsWith(".jar") } != false
+            ?.none { "server" in it.name && it.extension == "jar" } != false
     ) {
         ServerWatcher.initNew(root, 25565)
     } else {
@@ -44,7 +45,6 @@ fun main() = with(SingletonInjectionImpl) {
     terminal.println()
 
     server.awaitTermination()
-
 
     close()
 }

@@ -2,6 +2,7 @@
 
 import com.google.protobuf.gradle.id
 import info.solidsoft.gradle.pitest.PitestPluginExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktor_version = "2.2.4"
@@ -97,8 +98,10 @@ tasks.withType<JavaCompile>().all {
 }
 
 tasks.withType<KotlinCompile>().all {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
-    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
+        freeCompilerArgs.add("-Xcontext-receivers")
+    }
 }
 
 java {

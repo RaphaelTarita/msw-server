@@ -2,11 +2,12 @@ package msw.server.core.watcher
 
 import com.google.common.collect.HashBiMap
 import java.io.OutputStream
-import kotlin.io.path.Path
+import java.nio.file.Path
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.div
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import msw.server.core.common.Directory
 import msw.server.core.common.GlobalInjections
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.MemoryAmount
@@ -29,7 +30,7 @@ class ServerWatcher(
     companion object {
         context(GlobalInjections)
         fun initNew(
-            root: Directory,
+            root: Path,
             port: Int,
             initialVersionId: String? = null
         ): ServerWatcher {
@@ -37,14 +38,14 @@ class ServerWatcher(
             val downloadManager = DownloadManager()
             val manifest = if (initialVersionId != null) manifestCreator.createManifest(initialVersionId) else manifestCreator.latestRelease()
             terminal.info("initializing new server installation...")
-            terminal.info("- root dir: ${root.absolutePath}")
+            terminal.info("- root dir: ${root.absolutePathString()}")
             terminal.info("- port: $port")
             terminal.info("- initial version: ${manifest.versionID}")
 
-            val initialVersionPath = Path("minecraft_server_${manifest.versionID}.jar")
+            val initialVersionPath = "minecraft_server_${manifest.versionID}.jar"
             terminal.info("downloading: $initialVersionPath")
             runBlocking {
-                downloadManager.download(manifest, root.toPath().resolve(initialVersionPath))
+                downloadManager.download(manifest, root / initialVersionPath)
             }
 
             val command = buildList {
@@ -98,11 +99,11 @@ class ServerWatcher(
                 add("-Xms${(config.heapInit ?: 1024L.mebibytes).toCommandString()}")
                 add("-Xmx${(config.heapMax ?: 1024L.mebibytes).toCommandString()}")
                 add("-jar")
-                add("\"${directory.root.toPath().relativize(directory.getVersion(config.versionID))}\"")
+                add("\"${directory.root.relativize(directory.getVersion(config.versionID))}\"")
                 add("--port")
                 add(port.toString())
                 add("--world")
-                add("\"${directory.root.toPath().relativize(world.root.toPath())}\"")
+                add("\"${directory.root.relativize(world.root)}\"")
                 if (!config.guiEnabled) {
                     add("nogui")
                 }

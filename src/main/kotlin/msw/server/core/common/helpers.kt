@@ -10,6 +10,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 import java.time.OffsetDateTime
+import kotlin.io.path.div
+import kotlin.math.max
 import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +28,7 @@ import msw.server.rpc.versions.VersionLabel
 val HEX = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
 
 fun Long.coerceToInt(): Int {
-    return min(this, Int.MAX_VALUE.toLong()).toInt()
+    return max(min(this, Int.MAX_VALUE.toLong()), Int.MIN_VALUE.toLong()).toInt()
 }
 
 fun invertInsertionPoint(inverted: Int): Int {
@@ -35,16 +37,29 @@ fun invertInsertionPoint(inverted: Int): Int {
 
 fun String.truncate(maxlen: Int, suffix: String = "..."): String {
     val internalMaxlen = maxlen - suffix.length
-    return if (length < internalMaxlen) this else substring(0, internalMaxlen) + suffix
+    return if (length <= maxlen) this else substring(0, internalMaxlen) + suffix
 }
 
-fun composePath(root: Path, child: String): Path {
-    return root.resolve(child)
+fun directory(path: Path, create: Boolean = false, require: Boolean = true): Path {
+    if (require) {
+        if (!Files.exists(path)) {
+            if (create) {
+                Files.createDirectory(path)
+            } else {
+                throw IllegalArgumentException("$path does not exist")
+            }
+        }
+        require(Files.isDirectory(path)) { "$path is not a directory" }
+    }
+    return path
 }
 
-fun composePath(root: Directory, child: String): Path {
-    return composePath(root.toPath(), child)
-}
+fun directory(
+    parent: Path,
+    child: String,
+    create: Boolean = false,
+    require: Boolean = true
+) = directory(parent / child, create, require)
 
 fun readFromPath(path: Path): String {
     return String(Files.readAllBytes(path))
@@ -120,16 +135,20 @@ fun <K, V, R> Map<K, V>.ifContainsKey(key: K, action: (Pair<K, V>) -> R): R? {
     }
 }
 
-fun <K, V> Iterable<Pair<K, V>>.toMap(onDuplicates: (Pair<K, V>) -> Unit): Map<K, V> {
-    val res = LinkedHashMap<K, V>()
-    for ((k, v) in this) {
-        if (res.containsKey(k)) {
-            onDuplicates(k to v)
-        } else {
-            res[k] = v
+fun <T, K> Sequence<T>.distinctBy(selector: (T) -> K, onDuplicates: (T) -> Unit): Sequence<T> {
+    val observed = mutableSetOf<K>()
+    return sequence {
+        forEach {
+            val select = selector(it)
+            if (select in observed) {
+                onDuplicates(it)
+            } else {
+                observed += select
+                yield(it)
+            }
         }
+        observed.clear()
     }
-    return res
 }
 
 fun ByteArray.toHexString(): String {
@@ -214,10 +233,10 @@ sealed class NullableCompare<T> {
     data class CONTINUE<T>(val o1: T, val o2: T) : NullableCompare<T>()
 }
 
-fun Directory.runCommand(command: List<String>): Process {
+fun Path.runCommand(command: List<String>): Process {
     try {
         return ProcessBuilder(command)
-            .directory(this)
+            .directory(toFile())
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectError(ProcessBuilder.Redirect.PIPE)
             .start()

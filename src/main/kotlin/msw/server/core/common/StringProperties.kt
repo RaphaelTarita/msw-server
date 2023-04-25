@@ -1,6 +1,5 @@
 package msw.server.core.common
 
-import java.security.MessageDigest
 import kotlin.math.min
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -10,6 +9,8 @@ import kotlinx.serialization.StringFormat
 import kotlinx.serialization.modules.EmptySerializersModule
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.properties.Properties
+import msw.server.core.common.util.escape
+import msw.server.core.common.util.ifContainsKey
 
 private val nonBlankSeparators = setOf('=', ':')
 private val separators = nonBlankSeparators + ' '
@@ -34,7 +35,7 @@ sealed class StringProperties(internal val config: PropertiesConf) :
         repeat(config.spacesAfterSeparator) {
             builder.append(' ')
         }
-        builder.append(v.toString().escape(*config.lineSeparator.chars()))
+        builder.append(v.toString().escape(config.lineSeparator.chars()))
             .append(config.lineSeparator.s)
     }
 
@@ -128,31 +129,6 @@ sealed class StringProperties(internal val config: PropertiesConf) :
     fun <T> decodeWithComments(deserializer: DeserializationStrategy<T>, string: String): Pair<T, Map<Int, String>> {
         return decodeFromString(deserializer, string) to string.indexedComments(config)
     }
-
-    fun <T> semanticHash(
-        deserializer: DeserializationStrategy<T>,
-        string: String,
-        considerComments: Boolean = false,
-        algorithm: String = "SHA-1"
-    ): String {
-        val md = MessageDigest.getInstance(algorithm)
-
-        val comments: Map<Int, String>?
-        val obj = if (considerComments) {
-            val pair = decodeWithComments(deserializer, string)
-            comments = pair.second
-            pair.first
-        } else {
-            comments = null
-            decodeFromString(deserializer, string)
-        }
-
-        md.update(obj.toByteArray())
-        if (considerComments) {
-            md.update(comments.toByteArray())
-        }
-        return md.digest().toHexString()
-    }
 }
 
 private class StringPropertiesImpl(conf: PropertiesConf) : StringProperties(conf)
@@ -224,7 +200,7 @@ enum class CommentChar(val c: Char) {
     EXCLAMATION_MARK('!')
 }
 
-private fun String.escapeProperties() = escape('\\').escape('=', ':', ' ', '#', '!')
+private fun String.escapeProperties() = escape(charArrayOf('\\')).escape(charArrayOf('=', ':', ' ', '#', '!'))
 
 private fun String.logicalLines(preserveComments: Boolean = false): List<String> {
     val result = lines().filterNot {

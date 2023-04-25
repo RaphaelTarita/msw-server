@@ -8,8 +8,8 @@ import msw.server.core.common.GlobalInjections
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.Port
 import msw.server.core.common.ServerResponse
-import msw.server.core.common.readyMsg
-import msw.server.core.common.truncate
+import msw.server.core.common.util.readyMsg
+import msw.server.core.common.util.truncate
 import msw.server.core.watcher.ServerWatcher
 
 context(GlobalInjections)

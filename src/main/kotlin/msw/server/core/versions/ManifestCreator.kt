@@ -19,8 +19,8 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import msw.server.core.common.ExpirableCache
 import msw.server.core.common.GlobalInjections
-import msw.server.core.common.nullIfError
-import msw.server.core.common.readyMsg
+import msw.server.core.common.util.nullIfError
+import msw.server.core.common.util.readyMsg
 import msw.server.core.versions.model.VersionType
 import msw.server.core.versions.model.Versions
 
@@ -247,4 +247,5 @@ class ManifestCreator(
     }
 
     fun rootDocument() = root
+    val versionsMap by lazy { root.versions.associateBy { it.id } }
 }

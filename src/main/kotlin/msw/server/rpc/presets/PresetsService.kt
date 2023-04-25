@@ -2,8 +2,8 @@ package msw.server.rpc.presets
 
 import msw.server.core.common.GlobalInjections
 import msw.server.core.common.StringProperties
-import msw.server.core.common.readyMsg
-import msw.server.core.common.semanticEquivalence
+import msw.server.core.common.util.readyMsg
+import msw.server.core.common.util.semanticEquivalence
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.props.ServerProperties
 
@@ -41,7 +41,7 @@ class PresetsService(private val directory: ServerDirectory) : PresetsGrpcKt.Pre
                 if (semanticEquivalence(
                         prev,
                         request.props,
-                        StringProperties.Default,
+                        StringProperties,
                         ServerProperties.serializer()
                     )
                 ) {

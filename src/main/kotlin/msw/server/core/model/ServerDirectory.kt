@@ -8,6 +8,7 @@ import kotlin.io.path.div
 import kotlin.io.path.extension
 import kotlin.io.path.name
 import kotlin.io.path.nameWithoutExtension
+import kotlin.io.path.readText
 import kotlin.streams.asSequence
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -18,14 +19,13 @@ import msw.server.core.common.GlobalInjections
 import msw.server.core.common.JSONFile
 import msw.server.core.common.SingletonInjectionImpl.terminal
 import msw.server.core.common.StringProperties
-import msw.server.core.common.directory
-import msw.server.core.common.distinctBy
-import msw.server.core.common.existsOrNull
-import msw.server.core.common.readFromPath
-import msw.server.core.common.readyMsg
-import msw.server.core.common.renameTo
-import msw.server.core.common.sha1
-import msw.server.core.common.toVersionDetails
+import msw.server.core.common.util.directory
+import msw.server.core.common.util.distinctBy
+import msw.server.core.common.util.existsOrNull
+import msw.server.core.common.util.readyMsg
+import msw.server.core.common.util.renameTo
+import msw.server.core.common.util.sha1
+import msw.server.core.common.util.toVersionDetails
 import msw.server.core.model.props.ServerProperties
 import msw.server.core.model.world.World
 import msw.server.core.versions.DownloadManager
@@ -121,7 +121,7 @@ class ServerDirectory internal constructor(
     }
 
     fun presetByID(presetID: String): String {
-        return readFromPath(presets / "$presetID.properties")
+        return (presets / "$presetID.properties").readText()
     }
 
     fun presetExists(presetID: String): Boolean = presetIDs().contains(presetID)
@@ -161,7 +161,7 @@ class ServerDirectory internal constructor(
     }
 
     fun parseProperties(): ServerProperties {
-        return StringProperties.decodeFromString(readFromPath(properties))
+        return StringProperties.decodeFromString(properties.readText())
     }
 
     fun addVersion(id: String, listeners: List<suspend (current: Long, total: Long) -> Unit> = emptyList()): Job {

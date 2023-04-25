@@ -19,9 +19,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import msw.server.core.common.GlobalInjections
-import msw.server.core.common.coerceToInt
-import msw.server.core.common.readyMsg
-import msw.server.core.common.toHexString
+import msw.server.core.common.util.coerceToInt
+import msw.server.core.common.util.readyMsg
+import msw.server.core.common.util.toHexString
 
 context(GlobalInjections)
 class DownloadManager(
@@ -39,9 +39,9 @@ class DownloadManager(
         terminal.readyMsg("Download Service")
     }
 
-    private fun List<suspend (Long, Long) -> Unit>.notifyProgress(current: Long, total: Long) {
+    private suspend fun List<suspend (Long, Long) -> Unit>.notifyProgress(current: Long, total: Long) {
         for (listener in this) {
-            netScope.launch { listener(current, total) }
+            listener(current, total)
         }
     }
 

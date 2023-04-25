@@ -7,8 +7,8 @@ import kotlin.io.path.extension
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
 import msw.server.core.common.SingletonInjectionImpl
-import msw.server.core.common.directory
-import msw.server.core.common.existsOrNull
+import msw.server.core.common.util.directory
+import msw.server.core.common.util.existsOrNull
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.props.ServerProperties
 import msw.server.core.watcher.ServerWatcher

@@ -7,7 +7,7 @@ import kotlin.io.path.div
 import kotlin.io.path.inputStream
 import kotlin.streams.asSequence
 import msw.server.core.common.JSONFile
-import msw.server.core.common.directory
+import msw.server.core.common.util.directory
 import msw.server.core.model.PlayerStats
 import net.benwoodworth.knbt.Nbt
 import net.benwoodworth.knbt.NbtCompression

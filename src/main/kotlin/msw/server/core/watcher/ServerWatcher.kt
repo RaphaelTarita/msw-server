@@ -11,11 +11,11 @@ import kotlinx.coroutines.sync.withLock
 import msw.server.core.common.GlobalInjections
 import msw.server.core.common.InstanceConfiguration
 import msw.server.core.common.MemoryAmount
-import msw.server.core.common.addTerminationCallback
-import msw.server.core.common.mebibytes
-import msw.server.core.common.readyMsg
-import msw.server.core.common.runCommand
-import msw.server.core.common.toCommandString
+import msw.server.core.common.util.addTerminationCallback
+import msw.server.core.common.util.mebibytes
+import msw.server.core.common.util.readyMsg
+import msw.server.core.common.util.runCommand
+import msw.server.core.common.util.toCommandString
 import msw.server.core.model.ServerDirectory
 import msw.server.core.model.world.World
 import msw.server.core.versions.DownloadManager
@@ -113,7 +113,7 @@ class ServerWatcher(
                 directory.activatePreset(config.presetID)
                 instances[port] = directory.root
                     .runCommand(command)
-                    .addTerminationCallback(toplevelScope) {
+                    .addTerminationCallback {
                         portMappings.remove(port)
                         instances.remove(port)
                     } to config

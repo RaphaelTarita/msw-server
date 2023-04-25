@@ -2,6 +2,7 @@
 
 import com.google.protobuf.gradle.id
 import info.solidsoft.gradle.pitest.PitestPluginExtension
+import kotlin.math.min
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -11,15 +12,16 @@ val logback_version = "1.4.6"
 val guava_version = "31.1-jre"
 val jsonpath_version = "2.8.0"
 val kxs_version = "1.5.0"
-val proto_version = "3.22.2"
+val proto_version = "3.22.3"
 val protokt_version = "0.10.2"
 val grpc_version = "1.3.0"
 val grpcnetty_version = "1.54.0"
-val kotest_version = "5.5.5"
+val kotest_version = "5.6.1"
 val kotest_allure_version = "1.2.0"
 val kotest_pitest_version = "1.2.0"
 val knbt_version = "0.11.3"
 val mordant_version = "2.0.0-beta12"
+val mockk_version = "1.13.4"
 
 plugins {
     application
@@ -67,6 +69,7 @@ dependencies {
     testImplementation("io.kotest:kotest-property-jvm:$kotest_version")
     testImplementation("io.kotest.extensions:kotest-extensions-allure:$kotest_allure_version")
     testImplementation("io.kotest.extensions:kotest-extensions-pitest:$kotest_pitest_version")
+    testImplementation("io.mockk:mockk:$mockk_version")
 }
 
 application {
@@ -120,35 +123,7 @@ allure {
 }
 
 configure<PitestPluginExtension> {
-    testPlugin.set("Kotest")
+    // only TIMED_OUT if bigger value is used
+    threads.set(min(3, Runtime.getRuntime().availableProcessors()))
     targetClasses.set(listOf("msw.server.*"))
-}
-
-val testDir1Path = "/src/test/resources/DirectoryTest"
-val testDir2Path = "/src/test/resources/Create"
-tasks.register("preTest") {
-    doLast {
-        mkdir(testDir1Path)
-        file("$testDir1Path/empty.json").apply { createNewFile() }.writeText("")
-        file("$testDir1Path/json00.json").apply { createNewFile() }.writeText("{ \"s\": \"s\", \"i\": 0, \"b\": true}")
-        file("$testDir1Path/json01.json").apply { createNewFile() }.writeText("{}")
-        file("$testDir1Path/json02.json").apply { createNewFile() }.writeText("{}")
-        file("$testDir1Path/json03.json").apply { createNewFile() }.writeText("{}")
-        file("$testDir1Path/json04.json").apply { createNewFile() }.writeText("{}")
-        file("$testDir1Path/json05.json").apply { createNewFile() }.writeText("{}")
-        file("$testDir1Path/json06.json").apply { createNewFile() }.writeText("{}")
-    }
-}
-
-tasks.register<Delete>("postTest") {
-    for (task in tasks.withType<Test>()) {
-        mustRunAfter(task)
-    }
-    delete(testDir1Path)
-    delete(testDir2Path)
-    delete("/src/test/resources/NonExistent") // might be created by :pitest
-}
-
-tasks.withType<Test>().configureEach {
-    dependsOn("preTest")
 }

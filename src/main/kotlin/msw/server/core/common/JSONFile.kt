@@ -2,8 +2,8 @@ package msw.server.core.common
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
+import kotlin.io.path.readText
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 
@@ -20,18 +20,15 @@ class JSONFile<T>(val location: Path, private val serializer: KSerializer<T>, in
             setAndCommit(initial)
         }
 
-        stringContent = readFromPath(location)
+        stringContent = location.readText()
     }
-
-    constructor(location: String, serializer: KSerializer<T>, initial: T? = null, writeDefaults: Boolean = false)
-            : this(Paths.get(location), serializer, initial, writeDefaults)
 
     private fun cache(): T {
         return json.decodeFromString(serializer, stringContent).apply { objCache = this }
     }
 
     fun reload() {
-        stringContent = readFromPath(location)
+        stringContent = location.readText()
         objCache = null
     }
 
@@ -45,9 +42,9 @@ class JSONFile<T>(val location: Path, private val serializer: KSerializer<T>, in
 
     fun write() {
         if (objCache == null) return
-        Files.newBufferedWriter(location, StandardOpenOption.WRITE, StandardOpenOption.CREATE).apply {
-            write(json.encodeToString(serializer, objCache!!).also { stringContent = it })
-        }.close()
+        Files.newBufferedWriter(location, StandardOpenOption.WRITE, StandardOpenOption.CREATE).use { writer ->
+            writer.write(json.encodeToString(serializer, objCache!!).also { stringContent = it })
+        }
     }
 
     fun setAndCommit(content: T) {

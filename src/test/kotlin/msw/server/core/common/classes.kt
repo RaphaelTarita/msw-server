@@ -21,7 +21,6 @@ data class Model01(
     val b: Boolean = false
 ) : ModelMarker
 
-@Suppress("UnstableApiUsage")
 @Serializable
 data class Model02(
     @Serializable(with = DateSerializer::class)

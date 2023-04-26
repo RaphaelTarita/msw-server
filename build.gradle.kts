@@ -6,8 +6,8 @@ import kotlin.math.min
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktor_version = "2.2.4"
-val kotlin_version = "1.8.20"
+val ktor_version = "2.3.0"
+val kotlin_version = "1.8.21"
 val logback_version = "1.4.6"
 val guava_version = "31.1-jre"
 val jsonpath_version = "2.8.0"
@@ -20,14 +20,14 @@ val kotest_version = "5.6.1"
 val kotest_allure_version = "1.2.0"
 val kotest_pitest_version = "1.2.0"
 val knbt_version = "0.11.3"
-val mordant_version = "2.0.0-beta12"
+val mordant_version = "2.0.0-beta13"
 val mockk_version = "1.13.4"
 
 plugins {
     application
-    kotlin("jvm") version "1.8.20"
-    kotlin("plugin.serialization") version "1.8.20"
-    kotlin("kapt") version "1.8.20"
+    kotlin("jvm") version "1.8.21"
+    kotlin("plugin.serialization") version "1.8.21"
+    kotlin("kapt") version "1.8.21"
     id("io.qameta.allure") version "2.11.2"
     id("info.solidsoft.pitest") version "1.9.11"
     id("com.toasttab.protokt") version "0.10.2"
